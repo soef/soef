@@ -1,0 +1,31 @@
+{
+  "name": "soef",
+  "version": "0.1.0",
+  "description": "library for ioBroker",
+  "author": {
+    "name": "soef",
+    "email": "soef@gmx.net"
+  },
+  "contributors": [
+    {
+      "name": "soef",
+      "email": "soef@gmx.net"
+    }
+  ],
+  "homepage": "https://github.com/soef/soef",
+  "license": "MIT",
+  "keywords": [
+    "ioBroker",
+    "Home automation"
+  ],
+  "dependencies": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soef/soef"
+  },
+  "bugs": {
+    "url": "https://github.com/soef/soef/issues"
+  },
+  "readmeFilename": "README.md"
+}
