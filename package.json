@@ -1,6 +1,6 @@
 {
   "name": "soef",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "library for ioBroker",
   "author": {
     "name": "soef",
@@ -27,5 +27,6 @@
   "bugs": {
     "url": "https://github.com/soef/soef/issues"
   },
+  "main": "soef.js",
   "readmeFilename": "README.md"
 }
