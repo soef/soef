@@ -492,6 +492,11 @@ function CDeviceQueue (options) {
 
 function Devices (_adapter, _callback) {
 
+    //if (_adapter && !(_adapter instanceof Adapter)) {
+    if (!_adapter || !_adapter.adapterDir) {
+        _callback = _adapter;
+        _adapter = undefined;
+    }
     var that = this;
     this.list = [];
     //this.states = objects;
@@ -965,8 +970,13 @@ function Devices (_adapter, _callback) {
     return this;
 }
 
-//module.exports.main = function () {
-exports.main = function (adapter, options, callback ) {
+function _main (_adapter, options, callback ) {
+
+    if (!_adapter || !_adapter.adapterDir) {
+        options = _adapter;
+        callback = options;
+        _adapter = adapter;
+    }
 
     if (typeof options == 'function') {
         callback = options;
@@ -982,23 +992,94 @@ exports.main = function (adapter, options, callback ) {
 
     if (!options.doNotExportAdapter) {
         module.parent.exports = {
-            adapter: adapter
+            adapter: _adapter
         };
     }
 
-    adapter.getForeignObject('system.adapter.' + adapter.namespace, function(err, obj) {
+    _adapter.getForeignObject('system.adapter.' + _adapter.namespace, function(err, obj) {
         if (!err && obj && obj.common && obj.common.enabled === false) {
             // running in debuger
-            adapter.log.debug = console.log;
-            adapter.log.info = console.log;
-            adapter.log.warn = console.log;
+            _adapter.log.debug = console.log;
+            _adapter.log.info = console.log;
+            _adapter.log.warn = console.log;
             module.parent.__DEBUG__ = true;
         }
         //global._devices.init(adapter, function(err) {
-        _devices.init(adapter, function(err) {
+        _devices.init(_adapter, function(err) {
             callback();
         });
     });
+};
+exports.main = _main;
+
+exports.Adapter = function (_args) {
+    var args = arguments;
+    var _adapter, options = {}, onStateChange, main, onUnload;
+    for (var i=0; i<args.length; i++) {
+        var param = args[i];
+        if (typeof param == 'object') {
+            //if (param.adapter) {
+            //    _adapter = param.adapter;
+            //    continue;
+            //};
+            options = param;
+        }
+    }
+    for (var i=0; i<args.length; i++) {
+        var param = args[i];
+        switch (typeof param) {
+            case 'function':
+                switch (param.name) {
+                    case 'Adapter':
+                        _adapter = param;
+                        break;
+                    case 'onStateChange':
+                        onStateChange = param;
+                        break;
+                    case 'onUnload':
+                        onUnload = param;
+                        break;
+                    case 'main':
+                        main = param;
+                        break;
+                }
+        }
+    }
+    if (!_adapter) _adapter = require(__dirname + '/../../lib/utils').adapter;
+
+    if (!options.unload) {
+        options.unload = function (callback) {
+            try {
+                onUnload(calback);
+                //callback();
+            } catch (e) {
+                callback();
+            }
+        }
+    }
+    if (!options.stateChange) {
+        options.stateChange = function (id, state) {
+            if (state && !state.ack) {
+                onStateChange(id, state);
+            }
+        };
+    }
+    if (!options.ready) {
+        options.ready = function () {
+            //_main(_adapter, main);
+            _main(main);
+        }
+    }
+    if (!options.objectChange) {
+        options.objectChange = function (id, obj) {
+            //delete object from devices
+        }
+    }
+    _adapter = _adapter(options);
+    if (!adapter || !adapter.adapterDir) {
+        adapter = _adapter;
+    }
+    return _adapter;
 };
 
 
