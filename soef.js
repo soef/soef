@@ -527,6 +527,23 @@ function Devices (_adapter, _callback) {
         objects[id] = obj;
         //this.states[id] = obj;
     };
+
+    this.getobjex = function (id) {
+        var obj = this.get(id);
+        if (obj || !adapter || !adapter.namespace) return obj;
+        id = id.substr(adapter.namespace.length+1);
+        return objects[id];
+    };
+    this._getobjex = function(id) {
+        return this.getobjex(id) || { val: undefined };
+    };
+    this.invalidate = function (id) {
+        this._getobjex(id).val = undefined;
+    };
+    this.setrawval = function (id, val) {
+        this._getobjex(id).val = val;
+    };
+
     //this.showName = function (id, name) {
     //    return ((this.states[id] && this.states[id].showName) ? this.states[id].showName : name);
     //};
@@ -931,6 +948,22 @@ function Devices (_adapter, _callback) {
             }
             return false; //objects[_id];
         };
+
+        this.getobjex = function (id) {
+            var id = dcs(deviceName, channelName, id);
+            //return devices.getobjex(id);
+            return that.getobjex(id);
+        };
+        this._getobjex = function(id) {
+            return this.getobjex(id) || { val: undefined };
+        };
+        this.invalidate = function (id) {
+            this._getobjex(id).val = undefined;
+        };
+        this.setraw = function (id, val) {
+            this._getobjex(id).val = val;
+        };
+
         this.add = this.set;
         this.getFullId = function (id) {
             return dcs(deviceName, channelName, id);
@@ -1013,61 +1046,49 @@ function _main (_adapter, options, callback ) {
 exports.main = _main;
 
 exports.Adapter = function (_args) {
-    var args = arguments;
-    var _adapter, options = {}, onStateChange, main, onUnload;
-    for (var i=0; i<args.length; i++) {
-        var param = args[i];
-        if (typeof param == 'object') {
-            //if (param.adapter) {
-            //    _adapter = param.adapter;
-            //    continue;
-            //};
-            options = param;
-        }
-    }
+    var args = arguments, fns = {};
     for (var i=0; i<args.length; i++) {
         var param = args[i];
         switch (typeof param) {
             case 'function':
-                switch (param.name) {
-                    case 'Adapter':
-                        _adapter = param;
-                        break;
-                    case 'onStateChange':
-                        onStateChange = param;
-                        break;
-                    case 'onUnload':
-                        onUnload = param;
-                        break;
-                    case 'main':
-                        main = param;
-                        break;
-                }
+                fns[param.name] = param;
+                break;
+            case 'object':
+                fns.options = param;
+                break;
         }
     }
-    if (!_adapter) _adapter = require(__dirname + '/../../lib/utils').adapter;
-
+    if (!fns.adapter) fns.adapter = require(__dirname + '/../../lib/utils').adapter;
+    var options = fns.options;
     if (!options.unload) {
         options.unload = function (callback) {
             try {
-                onUnload(calback);
-                //callback();
+                fns.onUnload ? onUnload(calback) : callback();
             } catch (e) {
                 callback();
             }
         }
     }
-    if (!options.stateChange) {
+    if (!options.stateChange && fns.onStateChange) {
         options.stateChange = function (id, state) {
             if (state && !state.ack) {
-                onStateChange(id, state);
+
+
+                ///!!/////xxxxxxxxxxx//////////////////////////////////////
+                //var _id = id.substr(fns.adapter.namespace.length+1);
+                //_id = id.slice(fns.adapter.namespace.length+1);
+                //if (global.devices) {
+                //    global.devices.setrawval(_id, state.val);
+                //}
+                /////////////////////////////////////////////////////////
+
+                fns.onStateChange(id, state);
             }
         };
     }
-    if (!options.ready) {
+    if (!options.ready && fns.main) {
         options.ready = function () {
-            //_main(_adapter, main);
-            _main(main);
+            _main(fns.main);
         }
     }
     if (!options.objectChange) {
@@ -1075,16 +1096,17 @@ exports.Adapter = function (_args) {
             //delete object from devices
         }
     }
-    _adapter = _adapter(options);
-    if (!adapter || !adapter.adapterDir) {
-        adapter = _adapter;
+    if (!options.message && fns.onMessage) {
+        options.message = function(obj) {
+            if (obj) fns.onMessage(obj);
+        }
     }
-    return _adapter;
+    fns.adapter = fns.adapter(options);
+    if (!adapter || !adapter.adapterDir) {
+        adapter = fns.adapter;
+    }
+    return fns.adapter;
 };
-
-
-
-//exports.Devices = Devices;
 
 //module.exports =  function(useGlobalNamespace) {
 //    if (useGlobalNamespace) {
@@ -1096,6 +1118,5 @@ exports.Adapter = function (_args) {
 //    return { Devices: Devices, CDeviceQueue: CDeviceQueue, /*njs: njs,*/ extendGlobalNamespace: extendGlobalNamespace}
 //}
 exports.Devices = Devices;
-//exports.CDeviceQueue = CDeviceQueue;
 exports.njs = njs;
 exports.extendGlobalNamespace = extendGlobalNamespace;
