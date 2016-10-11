@@ -109,29 +109,6 @@ var njs = {
         doit(-1);
     },
 
-    //forEachObjCB: function (objects, step, func, readyCallback) {
-    //    if(typeof step === 'function') {
-    //        readyCallback = func;
-    //        func = step;
-    //        step = 1;
-    //    }
-    //    var objs = [];
-    //    for (var obj of objects) {
-    //        objs.push(obj);
-    //    }
-    //    var pop = step == -1 ? objs.pop : objs.shift;
-    //
-    //    function doit(ret) {
-    //        if (objs.length <= 0) {
-    //            return safeCallback(readyCallback, ret);
-    //        }
-    //        func(pop.call(objs), doit);
-    //    }
-    //
-    //    doit(-1);
-    //},
-
-
     forEachObjSync: function (objects, step, func, readyCallback) {
         if(typeof step === 'function') {
             readyCallback = func;
@@ -145,9 +122,6 @@ var njs = {
             }
         } else {
             objs = objects;
-            //for (var obj of objects) {
-            //    objs.push(obj);
-            //}
         }
         var pop = step == -1 ? objs.pop : objs.shift;
 
@@ -219,7 +193,6 @@ var njs = {
         adapter.getForeignStates(adapter.namespace + '.*', {}, function(err, states) {
             if (err || !states) return;
             for (var fullId in states) {
-                //adapter.deleteState(fullId);
                 adapter.delState(fullId);
             }
             adapter.getDevices(function (err, devices) {
@@ -238,15 +211,12 @@ var njs = {
                         }
                         adapter.log.debug("states deleted");
                         safeCallback(callback);
-                        //process.exit();
                     });
                 });
             });
         });
         return true;
     },
-
-
 
     valtype: function (val) {
         switch (val) {
@@ -342,152 +312,6 @@ function setObjectNotExists(id, newObj, callback) {
     })
 }
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-var DEVICE = 0;
-var CHANNEL = 1;
-var STATE = 2;
-
-var typeNames = ['device', 'channel', 'state'];
-
-function CDeviceQueue (options) {
-    options = options || {};
-    var that = this;
-    var newObjects = [];
-    var o = [0,0,0];
-    var parent = { _id: '' };
-    var checkExists = options.checkExists || true;
-
-    this.set = function (id, val, ack) {
-        if (!objects[id]) {
-            this.newObj(id, val); // add...
-            return;
-        }
-        if (objects[id].val !== val) {
-            setState(id, val, ack);
-        }
-    }
-
-    this.add = function (_obj) {
-        if (checkExists && objects[_obj._id]) {
-            return;
-        }
-        var obj = Object.assign({}, _obj);
-        delete obj.parent;
-        objects[obj._id] = obj;      //??
-        newObjects.push(obj);
-    };
-
-    //function __id(_id) {
-    //    return (parent && parent['_id']) ? parent._id + '.' + _id : _id;
-    //}
-
-    function push(what) {
-        if (what+1 < o.length) {
-            push(what+1);
-        }
-        if (o[what]) {
-            if (what) {
-                //o[what].parent.children.push(o[what]._id);
-            }
-            that.add(o[what]);
-            o[what] = 0;
-        }
-    }
-
-    function _new (_id, name, what) {
-        push(what);
-        parent = o[what-1];
-        if (what === undefined) {
-            what = name;
-            name = null;
-        }
-        o[what] = {
-            //_id: __id(_id),
-            _id: dcs(parent['_id'], _id),
-            type: typeNames [what],
-            common: {
-                name: name ? name : _id
-            },
-            native: {},
-            //children: [],
-            parent: parent
-        };
-        parent = o[what];
-        return o[what];
-    }
-
-    this.newDevice = function (_id, name) {
-        return _new(_id, name, DEVICE);
-    };
-
-    this.newChannel = function (_id, name) {
-        return _new(_id, name, CHANNEL);
-    };
-
-    this.newState = function (name) {
-        push(STATE);
-        o[STATE] = {
-            //_id: __id(name),
-            _id: dcs(parent['_id'], name),
-            type: 'state',
-            common: {
-                name: name,
-                role: 'state',
-                read: true,
-                write: false
-            },
-            native: {},
-            parent: parent
-        };
-        return o[STATE];
-    };
-
-    this.newObj = function(id, val) {
-        var ar = id.split('.');
-        if (ar.length > 1) this.newDevice(ar.slice());
-        while (ar.length > 1) {
-            this.newChannel(ar.slice());
-        }
-        this.newState(ar[0]);
-        //objects[id].val = val;
-    }
-
-    this.update = function () {
-        push(DEVICE);
-
-        function addObjects() {
-            if (newObjects.length > 0) {
-                var newObject = newObjects.pop();
-                //var val = undefined;
-                //if (newObject['val'] !== undefined) {
-                //    val = newObject.val;
-                //    delete newObject.val;
-                //}
-                var val = newObject['val'];
-                if (val !== undefined) {
-                    delete newObject.val;
-                }
-
-                setObject(newObject._id, newObject, {}, function (err, obj) {
-                    adapter.log.info('object ' + adapter.namespace + '.' + newObject._id + ' created');
-                    if (val !== undefined) {
-                        //adapter.setState(obj._id, val, true);
-                        setState(obj._id, val, true);
-                    }
-                    addObjects();
-                });
-            }
-        }
-        addObjects();
-    };
-    this.ready = this.update;
-    return this;
-}
-*/
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function Devices (_adapter, _callback) {
@@ -499,7 +323,6 @@ function Devices (_adapter, _callback) {
     }
     var that = this;
     this.list = [];
-    //this.states = objects;
 
     this.setAdapter = function (_adapter) {
         adapter = _adapter;
@@ -515,17 +338,8 @@ function Devices (_adapter, _callback) {
     this.remove = function(id) {
          delete objects[id];
     };
-    //this.existState = function (id) {
-    //    return (this.has(id, 'exist') && this.states[id].exist === true);
-    //};
-    //this.setExist = function (id, val) {
-    //    val = val || true;
-    //    if (!this.has(id)) this.states[id] = { exist: val };
-    //    else this.states[id].exist = val;
-    //};
     this.setraw = function (id, obj) {
         objects[id] = obj;
-        //this.states[id] = obj;
     };
 
     this.getobjex = function (id) {
@@ -543,10 +357,6 @@ function Devices (_adapter, _callback) {
     this.setrawval = function (id, val) {
         this._getobjex(id).val = val;
     };
-
-    //this.showName = function (id, name) {
-    //    return ((this.states[id] && this.states[id].showName) ? this.states[id].showName : name);
-    //};
 
     this.getKeys = function (pattern) {
         var r = new RegExp(pattern2RegEx(pattern));
@@ -568,21 +378,8 @@ function Devices (_adapter, _callback) {
         }
     };
 
-    //this.stateChanged = function (id, val, ack) {
-    //};
-
     this.createObjectNotExists = function (id, obj, callback) {
         var val;
-        //var newobj = Object.assign({
-        //    type: 'state',
-        //    common: {
-        //        name: id,
-        //        type: 'string',
-        //        role: obj.type || 'state',
-        //        enumerable: true
-        //    },
-        //    native: { n: 1}
-        //}, obj);
         var newobj = {
             type: 'state',
             common: {
@@ -599,16 +396,8 @@ function Devices (_adapter, _callback) {
         if (obj['val'] !== undefined) {
             newobj.common.type = typeof obj.val;
             val = obj.val;
-            //newobj.common.role = 'state';
-            //newobj.type = 'state';
             delete newobj.val;
         }
-        //if (obj['showName'] !== undefined) {
-        //    newobj.common.name = obj.showName;
-        //    //!!
-        //    delete newobj.showName;
-        //}
-        //newobj = this.extendObject(id, newobj);
         setObjectNotExists(id, newobj, function(err, o) {
             if (!err) {
                 //that.states[newobj._id] = newobj;
@@ -626,7 +415,6 @@ function Devices (_adapter, _callback) {
         else val = objects[id].val;
         ack = ack || true;
         setState(id, val, ack);
-        //this.stateChanged(id, val, ack);
     };
 
     this.setStateEx = function (id, newObj, ack, callback) {
@@ -641,7 +429,6 @@ function Devices (_adapter, _callback) {
         if (!that.has(id)) {
             that.createObjectNotExists(id, newObj, callback);
         } else {
-            //if (that.states[id].val !== newObj.val) {
             if (objects[id].val !== newObj.val) {
                 that.setState(id, newObj.val, ack);
             }
@@ -660,15 +447,10 @@ function Devices (_adapter, _callback) {
             }
         }
         if (showName) {
-            //Object.assign(obj, { common: { name: showName}});
             _fullExtend(obj, { common: { name: showName}});
         }
         return obj;
     }
-
-    //this.extendObject = function (fullName, obj) {
-    //    return obj;
-    //};
 
     this.updateAsync = function (list, callback) {
         if (typeof list === 'function') {
@@ -702,7 +484,6 @@ function Devices (_adapter, _callback) {
             list = that.list;
             that.list = [];
             if (that.root.list) that.root.list = that.list;
-            //that.list.splice(0, that.list.length); //to preserve this.loot.list
         }
         if (!list || list.length == 0) return safeCallback(callback, -1);
 
@@ -728,7 +509,6 @@ function Devices (_adapter, _callback) {
                 objects[id] = {};
             }
             _setobjname(objects[id], '');
-            //fullExtend(objects[id], o);
         }
         if (objects[id].common.name !== name) {
             adapter.getObject(id, {}, function (err, obj) {
@@ -796,7 +576,6 @@ function Devices (_adapter, _callback) {
                     safeCallback(callback, 0);
                 });
             });
-            //safeCallback(callback, 0);
         });
     };
 
@@ -827,18 +606,13 @@ function Devices (_adapter, _callback) {
             }
             return push(obj);
         };
-        this.setDevice(_name, showName ? { common : { name: showName}} : undefined);
+        //this.setDevice(_name, showName ? { common : { name: showName}} : undefined);
+        this.setDevice(_name, showName && typeof showName == 'string' ? {common: {name: showName}} : showName);
 
         this.setObjectName = function (id, showName) {
             for (var i=0; i<self.list.length; i++) {
                 if (self.list[i]._id == id) {
-                    //var o = self.list[i];
                     _setobjname(self.list[i], showName);
-                    //if (o['common'] === undefined) {
-                    //    o['common'] = {};
-                    //}
-                    //o.common['name'] = showName;
-                    //fullExtend (self.list[i], { common: { name: showName}});
                     return i;
                 }
             }
@@ -849,7 +623,6 @@ function Devices (_adapter, _callback) {
             if (name === undefined) channelName = "";
             else {
                 channelName = name;
-                //var id = dcs(this.name, channel);
                 var id = dcs(deviceName, channelName);
                 if (!that.has(id)) {
                     if (typeof showNameOrObject == 'object') {
@@ -891,29 +664,6 @@ function Devices (_adapter, _callback) {
             return push(obj);
         }
 
-        //function _set (_id, id, newObj, showName) {
-        //    if (!objects[_id]) {
-        //        return add (id, newObj, showName);
-        //    }
-        //    var val = newObj['val'] !== undefined ? newObj.val : newObj;
-        //    if (objects[_id].val !== val) {
-        //        that.setState(_id, val, true);
-        //    }
-        //};
-        //
-        //this.dcset = function (d,c,s,v, showName) {
-        //    var _id = dcs(d, c, s);
-        //    _set(_id, v, showName);
-        //};
-        //this.dset = function(d,s,v, showName) {
-        //    var _id = dcs(d, '', s);
-        //    _set(_id, v, showName);
-        //};
-        //this.sset = function(s,v, showName) {
-        //    var _id = s;
-        //    _set(_id, v, showName);
-        //};
-
         function __setVal(_id, newObj) {
             var val = newObj['val'] !== undefined ? newObj.val : newObj;
             if (objects[_id].val !== val) {
@@ -936,7 +686,6 @@ function Devices (_adapter, _callback) {
 
         this.set = function (id, newObj, showName) {
             var _id = dcs(deviceName, channelName, id);
-            //_set(_id, id, newObj, showName);
             if (newObj == undefined) return;
             if (!objects[_id]) {
                 return add (id, newObj, showName);
@@ -948,10 +697,15 @@ function Devices (_adapter, _callback) {
             }
             return false; //objects[_id];
         };
+        this.setex = function (id, newObj, showName) {
+            if (adapter && id.substr(0, adapter.namespace.length) == adapter.namespace) {
+                id = id.substr(adapter.namespace.length+1);
+            }
+            return this.set(id, newObj, showName);
+        };
 
         this.getobjex = function (id) {
             var id = dcs(deviceName, channelName, id);
-            //return devices.getobjex(id);
             return that.getobjex(id);
         };
         this._getobjex = function(id) {
