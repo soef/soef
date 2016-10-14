@@ -4,17 +4,6 @@
  Copyright (c) 2016 soef <soef@gmx.net>
  All rights reserved.
 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
- * Redistributions of source code must retain the above copyright
- notice, this list of conditions and the following disclaimer.
- * Redistributions in binary form must reproduce the above copyright
- notice, this list of conditions and the following disclaimer in the
- documentation and/or other materials provided with the distribution.
- * Neither the name of sprintf() for JavaScript nor the
- names of its contributors may be used to endorse or promote products
- derived from this software without specific prior written permission.
-
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,14 +15,7 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
- Changelog:
- 2016.09.27 - 0.0.0.4 CDevice.get...
- 2016-01-13 - 0.0.0.3 fixed errors of initial reeaase
- ...
-
- 2016.01.10 - 0.0.0.1 initial release
-  */
+**/
 
 
 "use strict";
@@ -188,35 +170,138 @@ var njs = {
         })
     },
 
-    REMOVE_ALL: function  (adapter, callback) {
 
-        adapter.getForeignStates(adapter.namespace + '.*', {}, function(err, states) {
-            if (err || !states) return;
-            for (var fullId in states) {
-                adapter.delState(fullId);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    idWithoutNamespace: function (id, _adapter) {
+        if (_adapter == undefined) _adapter = adapter;
+        return id.substr(_adapter.namespace.length+1);
+    },
+
+    removeAllObjects: function  (adapter, callback) {
+
+        adapter.getStates('*', function (err, states) {
+            var st = [];
+            for (var i in states) {
+                st.push(i);
             }
-            adapter.getDevices(function (err, devices) {
-                for (var d = 0; d < devices.length; d++) {
-                    adapter.deleteDevice(devices[d]._id);
-                }
-                adapter.log.debug("devices deleted");
-                adapter.getChannels('', function (err, channels) {
-                    for (var d = 0; d < channels.length; d++) {
-                        adapter.deleteChannel(channels[d]._id);
-                    }
-                    adapter.log.debug("channels deleted");
-                    adapter.getStates('*', {}, function (err, states) {
-                        for (var d in states) {
-                            adapter.delState(d);
+            var s = 0;
+
+            function dels() {
+
+                if (s >= st.length) {
+                    adapter.getChannels(function (err, channels) {
+                        var c = 0;
+
+                        function delc() {
+                            if (c >= channels.length) {
+                                adapter.getDevices(function (err, devices) {
+                                    var d = 0;
+
+                                    function deld() {
+                                        if (d >= devices.length) {
+                                            callback();
+                                            return;
+                                        }
+                                        var did = devices[d++]._id;
+                                        did = idWithoutNamespace(did);
+                                        //adapter.delDevice(did, function(err,obj) {
+                                        adapter.deleteDevice(did, function (err,obj) {
+                                            deld();
+                                        });
+                                    }
+                                    deld();
+                                });
+                                return;
+                            }
+                            adapter.deleteChannel(channels[c]._id, function () {
+                                delc();
+                            });
                         }
-                        adapter.log.debug("states deleted");
-                        safeCallback(callback);
+                        delc();
+                    });
+                    return;
+                }
+                var nid = st[s++];
+                adapter.delState(nid, function () {
+                    adapter.delObject(nid, function() {
+                        dels();
                     });
                 });
-            });
+            }
+            dels();
         });
-        return true;
     },
+
+    REMOVE_ALL: function  (adapter, callback) {
+        if (callback) callback();
+    },
+
+    //REMOVE_ALL: function  (adapter, callback) {
+    //
+    //    function idWitoutNamespace(id, _adapter) {
+    //        if (_adapter == undefined) _adapter = adapter;
+    //        return id.substr(_adapter.namespace.length+1);
+    //    }
+    //
+    //    adapter.getForeignStates(adapter.namespace + '.*', {}, function(err, states) {
+    //        if (err || !states) return;
+    //        for (var fullId in states) {
+    //            adapter.delState(idWitoutNamespace(fullId));
+    //        }
+    //        adapter.getDevices(function (err, devices) {
+    //            for (var d = 0; d < devices.length; d++) {
+    //                adapter.deleteDevice(idWitoutNamespace(devices[d]._id));
+    //            }
+    //            adapter.log.debug("devices deleted");
+    //            adapter.getChannels('', function (err, channels) {
+    //                for (var d = 0; d < channels.length; d++) {
+    //                    adapter.deleteChannel(idWitoutNamespace(channels[d]._id));
+    //                }
+    //                adapter.log.debug("channels deleted");
+    //                adapter.getStates('*', {}, function (err, states) {
+    //                    for (var d in states) {
+    //                        adapter.delState(idWitoutNamespace(d));
+    //                    }
+    //                    adapter.log.debug("states deleted");
+    //                    safeCallback(callback);
+    //                });
+    //            });
+    //        });
+    //    });
+    //    return true;
+    //},
+
+
+//REMOVE_ALL: function  (adapter, callback) {
+//
+//        adapter.getForeignStates(adapter.namespace + '.*', {}, function(err, states) {
+//            if (err || !states) return;
+//            for (var fullId in states) {
+//                adapter.delState(fullId);
+//            }
+//            adapter.getDevices(function (err, devices) {
+//                for (var d = 0; d < devices.length; d++) {
+//                    adapter.deleteDevice(devices[d]._id);
+//                }
+//                adapter.log.debug("devices deleted");
+//                adapter.getChannels('', function (err, channels) {
+//                    for (var d = 0; d < channels.length; d++) {
+//                        adapter.deleteChannel(channels[d]._id);
+//                    }
+//                    adapter.log.debug("channels deleted");
+//                    adapter.getStates('*', {}, function (err, states) {
+//                        for (var d in states) {
+//                            adapter.delState(d);
+//                        }
+//                        adapter.log.debug("states deleted");
+//                        safeCallback(callback);
+//                    });
+//                });
+//            });
+//        });
+//        return true;
+//    },
 
     valtype: function (val) {
         switch (val) {
@@ -437,7 +522,8 @@ function Devices (_adapter, _callback) {
     };
 
     function val2obj(valOrObj, showName) {
-        if (valOrObj === null) return;
+        //if (valOrObj === null) return;
+        if (!valOrObj) return;
         if (typeof valOrObj === 'object') {
             var obj = valOrObj;
         } else {
@@ -654,11 +740,13 @@ function Devices (_adapter, _callback) {
         }
 
         function add (name, valOrObj, showName) {
-            if (valOrObj === null) return;
+            //if (valOrObj === null) return;
+            if (!valOrObj) return;
             if (name.indexOf('.') >= 0) {
                 return split(name, valOrObj, showName);
             }
-            var obj = val2obj(valOrObj, showName || name);
+            //var obj = val2obj(valOrObj, showName || name);
+            var obj = val2obj(valOrObj, valOrObj.common && valOrObj.common.name ? undefined : showName || name);
             obj._id = dcs(deviceName, channelName, name);
             obj.type = 'state';
             return push(obj);
@@ -685,8 +773,8 @@ function Devices (_adapter, _callback) {
         };
 
         this.set = function (id, newObj, showName) {
-            var _id = dcs(deviceName, channelName, id);
             if (newObj == undefined) return;
+            var _id = dcs(deviceName, channelName, id);
             if (!objects[_id]) {
                 return add (id, newObj, showName);
             }
@@ -756,6 +844,61 @@ function Devices (_adapter, _callback) {
 
     return this;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+function parseIntVersion(vstr) {
+    if (!vstr || vstr=='') return 0;
+    var ar = vstr.split('.');
+    var iVer = 0;
+    for (var i=0; i<ar.length; i++) {
+        iVer *= 1000;
+        iVer += ar[i] >> 0;
+    }
+    return iVer;
+}
+
+function nop() {}
+
+function checkIfUpdated(doUpdateCallback, callback) {
+    if(!adapter) {
+        if (callback) callback();
+        return;
+    }
+    if (!doUpdateCallback) return;
+    if (!callback) callback = nop;
+    var id = 'system.adapter.' + adapter.namespace;
+    var vid = id + '.prevVersion';
+    adapter.states.getState(vid, function(err, state) {
+        var prevVersion = 0;
+        var aktVersion = parseIntVersion(adapter.ioPack.common.version);
+
+        function callUpdate() {
+            doUpdateCallback(prevVersion, aktVersion, function(err) {
+                adapter.states.setState(vid, { val: adapter.ioPack.common.version, ack: true, from: id });
+                callback();
+            });
+        }
+
+        if (!err && state) {
+            prevVersion = parseIntVersion(state.val);
+            if (prevVersion < aktVersion) {
+                callUpdate();
+            } else {
+                callback();
+            }
+            return;
+        }
+        adapter.objects.setObject(vid, {
+            type: 'state',
+            common: {name: 'version', role: "indicator.state", desc: 'version check for updates'},
+            native: {}
+        }, function (err, obj) {
+            callUpdate();
+        });
+    });
+}
+
 
 function _main (_adapter, options, callback ) {
 
@@ -842,6 +985,12 @@ exports.Adapter = function (_args) {
     }
     if (!options.ready && fns.main) {
         options.ready = function () {
+            if (fns.onUpdate) {
+                checkIfUpdated(fns.onUpdate, function() {
+                    _main(fns.main);
+                });
+                return;
+            }
             _main(fns.main);
         }
     }
@@ -874,3 +1023,7 @@ exports.Adapter = function (_args) {
 exports.Devices = Devices;
 exports.njs = njs;
 exports.extendGlobalNamespace = extendGlobalNamespace;
+
+var _sprintf = require('sprintf-js');
+exports.sprintf = _sprintf.sprintf;
+exports.vsprintf = _sprintf.vsprintf;
