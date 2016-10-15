@@ -15,8 +15,7 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-**/
-
+ **/
 
 "use strict";
 
@@ -27,6 +26,24 @@
 //    ES6 = ar[0] >> 0 > 0 || (ar[1] >> 0 >= 12);
 //}
 //determinateNodeVersion();
+
+function __hasProp (obj, propString) {
+    if (!obj) return false;
+    var ar = propString.split('.');
+    var len = ar.length;
+    for (var i = 0; i < len; i++) {
+        obj = obj[ar[i]];
+        if (obj === undefined) return false;
+    }
+    return true;
+}
+exports.hasProp = __hasProp;
+exports.hasProperty = __hasProp;
+
+//Object.prototype.hasProp = function(v) {
+//    return soef.hasProp (this,v);
+//};
+
 
 var njs = {
 
@@ -132,12 +149,12 @@ var njs = {
         //        else if (i) ret += '.' + i;
         //    }
         //} else {
-            var ar = [deviceName, channelName, stateName];
-            for (var i = 0; i < ar.length; i++) {//[deviceName, channelName, stateName]) {
-                var s = ar[i];
-                if (!ret) ret = s;
-                else if (s) ret += '.' + s;
-            }
+        var ar = [deviceName, channelName, stateName];
+        for (var i = 0; i < ar.length; i++) {//[deviceName, channelName, stateName]) {
+            var s = ar[i];
+            if (!ret) ret = s;
+            else if (s) ret += '.' + s;
+        }
         //}
         return ret;
     },
@@ -170,6 +187,9 @@ var njs = {
         })
     },
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //hasProp: __hasProp,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -421,7 +441,7 @@ function Devices (_adapter, _callback) {
         return (objects[id]);
     };
     this.remove = function(id) {
-         delete objects[id];
+        delete objects[id];
     };
     this.setraw = function (id, obj) {
         objects[id] = obj;
@@ -860,6 +880,17 @@ function parseIntVersion(vstr) {
 
 function nop() {}
 
+function savePrevVersion(_adapter) {
+    if (!_adapter) {
+        _adapter = adapter;
+    }
+    if(!hasProp(_adapter, 'ioPack.common.version')) return;
+    //if (!_adapter || !_adapter.ioPack || !_adapter.ioPack.common || !_adapter.ioPack.common.version) return;
+    var id = 'system.adapter.' + _adapter.namespace;
+    var vid = id + '.prevVersion';
+    _adapter.states.setState(vid, { val: _adapter.ioPack.common.version, ack: true, from: id });
+}
+
 function checkIfUpdated(doUpdateCallback, callback) {
     if(!adapter) {
         if (callback) callback();
@@ -875,7 +906,8 @@ function checkIfUpdated(doUpdateCallback, callback) {
 
         function callUpdate() {
             doUpdateCallback(prevVersion, aktVersion, function(err) {
-                adapter.states.setState(vid, { val: adapter.ioPack.common.version, ack: true, from: id });
+                savePrevVersion(adapter);
+                //adapter.states.setState(vid, { val: adapter.ioPack.common.version, ack: true, from: id });
                 callback();
             });
         }
@@ -991,6 +1023,7 @@ exports.Adapter = function (_args) {
                 });
                 return;
             }
+            savePrevVersion();
             _main(fns.main);
         }
     }
@@ -1020,6 +1053,35 @@ exports.Adapter = function (_args) {
 //    }
 //    return { Devices: Devices, CDeviceQueue: CDeviceQueue, /*njs: njs,*/ extendGlobalNamespace: extendGlobalNamespace}
 //}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+exports.TimeDiff = function () {
+    if (!(this instanceof exports.TimeDiff)) return new exports.TimeDiff();
+    this.get = process.hrtime;
+
+    this.getDif = function() {
+        var ar = this.get();
+        var start = this.start[0] * 1e9 + this.start[1];
+        var end = ar[0] * 1e9 + ar[1];
+        return end - start;
+    };
+
+    this.getMillis = function() {
+        return this.getDif() / 1000000 >> 0;
+    };
+    this.getMicros = function() {
+        return this.getDif() / 1000 >> 0;
+    };
+
+    this.start = process.hrtime();
+    return this;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 exports.Devices = Devices;
 exports.njs = njs;
 exports.extendGlobalNamespace = extendGlobalNamespace;
