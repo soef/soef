@@ -27,7 +27,7 @@
 //}
 //determinateNodeVersion();
 
-function __hasProp (obj, propString) {
+function hasProp (obj, propString) {
     if (!obj) return false;
     var ar = propString.split('.');
     var len = ar.length;
@@ -37,11 +37,23 @@ function __hasProp (obj, propString) {
     }
     return true;
 }
-exports.hasProp = __hasProp;
-exports.hasProperty = __hasProp;
+exports.hasProp = hasProp;
+exports.hasProperty = hasProp;
+
+function getProp (obj, propString) {
+    if (!obj) return undefined;
+    var ar = propString.split('.');
+    var len = ar.length;
+    for (var i = 0; i < len; i++) {
+        obj = obj[ar[i]];
+        if (obj === undefined) return undefined;
+    }
+    return obj;
+}
+exports.getProp = getProp;
 
 //Object.prototype.hasProp = function(v) {
-//    return soef.hasProp (this,v);
+//    return hasProp (this,v);
 //};
 
 
@@ -189,7 +201,7 @@ var njs = {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //hasProp: __hasProp,
+    //hasProp: hasProp,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -761,12 +773,13 @@ function Devices (_adapter, _callback) {
 
         function add (name, valOrObj, showName) {
             //if (valOrObj === null) return;
-            if (!valOrObj) return;
+            if (valOrObj == null) return;
             if (name.indexOf('.') >= 0) {
                 return split(name, valOrObj, showName);
             }
             //var obj = val2obj(valOrObj, showName || name);
-            var obj = val2obj(valOrObj, valOrObj.common && valOrObj.common.name ? undefined : showName || name);
+            //var obj = val2obj(valOrObj, valOrObj.common && valOrObj.common.name ? undefined : showName || name);
+            var obj = val2obj(valOrObj, hasProp(valOrObj, 'common.name') ? undefined : showName || name);
             obj._id = dcs(deviceName, channelName, name);
             obj.type = 'state';
             return push(obj);
@@ -885,7 +898,6 @@ function savePrevVersion(_adapter) {
         _adapter = adapter;
     }
     if(!hasProp(_adapter, 'ioPack.common.version')) return;
-    //if (!_adapter || !_adapter.ioPack || !_adapter.ioPack.common || !_adapter.ioPack.common.version) return;
     var id = 'system.adapter.' + _adapter.namespace;
     var vid = id + '.prevVersion';
     _adapter.states.setState(vid, { val: _adapter.ioPack.common.version, ack: true, from: id });
@@ -959,14 +971,14 @@ function _main (_adapter, options, callback ) {
     }
 
     _adapter.getForeignObject('system.adapter.' + _adapter.namespace, function(err, obj) {
-        if (!err && obj && obj.common && obj.common.enabled === false) {
+        //if (!err && obj && obj.common && obj.common.enabled === false) {
+        if (!err && getProp(obj, 'common.enabled') === false) {
             // running in debuger
             _adapter.log.debug = console.log;
             _adapter.log.info = console.log;
             _adapter.log.warn = console.log;
             module.parent.__DEBUG__ = true;
         }
-        //global._devices.init(adapter, function(err) {
         _devices.init(_adapter, function(err) {
             callback();
         });
@@ -1029,7 +1041,9 @@ exports.Adapter = function (_args) {
     }
     if (!options.objectChange) {
         options.objectChange = function (id, obj) {
-            //delete object from devices
+            if (id && obj == null && global.devices) {
+                global.devices.remove(idWithoutNamespace(id));
+            }
         }
     }
     if (!options.message && fns.onMessage) {
