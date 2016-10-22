@@ -866,9 +866,11 @@ function Devices (_adapter, _callback) {
         };
         this.setImmediately = this.setAndUpdate;
 
-        this.update = function () {
+        this.update = function (callback) {
             if (this.list.length > 0) {
-                that.update(this.list);
+                that.update(this.list, callback);
+            } else {
+                safeCallback(callback);
             }
         };
 
