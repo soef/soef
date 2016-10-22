@@ -391,12 +391,14 @@ function extendGlobalNamespace() {
     }
 }
 
+var adapter;
 function errmsg () { console.debug("adapter not assigned, use Device.setAdapter(yourAdapter)") };
 
-if (module.parent.exports['adapter']) {
-    var adapter = module.parent.exports.adapter;
+//if (module.parent.exports['adapter']) {
+if (hasProp(module, 'parent.exports.adapter')) {
+    adapter = module.parent.exports.adapter;
 } else {
-    var adapter = {
+    adapter = {
         setState: errmsg,
         setObject: errmsg,
         setObjectNotExists: errmsg,
@@ -699,6 +701,9 @@ function Devices (_adapter, _callback) {
 
 
     this.CDevice = function CDevice (_name, showName, list) {
+        if (!(this instanceof that.CDevice)) {
+            return new that.CDevice(_name, showName, list);
+        }
 
         var deviceName = '', channelName = '';
         var self = this;
@@ -855,12 +860,17 @@ function Devices (_adapter, _callback) {
             if (this.get(id)) return;
             this.set(id, newObj, showName);
         };
+        this.setAndUpdate = function (id, newObj) {
+            this.set(id, newObj);
+            this.update();
+        };
+        this.setImmediately = this.setAndUpdate;
 
         this.update = function () {
             if (this.list.length > 0) {
                 that.update(this.list);
             }
-        }
+        };
 
     };
 
@@ -893,53 +903,51 @@ function parseIntVersion(vstr) {
 
 function nop() {}
 
-function savePrevVersion(_adapter) {
-    if (!_adapter) {
-        _adapter = adapter;
-    }
-    if(!hasProp(_adapter, 'ioPack.common.version')) return;
-    var id = 'system.adapter.' + _adapter.namespace;
+function savePrevVersion() {
+    if(!hasProp(adapter, 'ioPack.common.version')) return;
+    var id = 'system.adapter.' + adapter.namespace;
     var vid = id + '.prevVersion';
-    _adapter.states.setState(vid, { val: _adapter.ioPack.common.version, ack: true, from: id });
+
+    function set() {
+        adapter.states.setState(vid, { val: adapter.ioPack.common.version, ack: true, from: id });
+    }
+
+    adapter.objects.getObject(vid, function(err, obj) {
+        if (err || !obj) {
+            adapter.objects.setObject(vid, {
+                type: 'state',
+                common: {name: 'version', role: "indicator.state", desc: 'version check for updates'},
+                native: {}
+            }, function (err, obj) {
+                set();
+            });
+            return;
+        }
+        set();
+    })
 }
 
 function checkIfUpdated(doUpdateCallback, callback) {
-    if(!adapter) {
-        if (callback) callback();
-        return;
-    }
-    if (!doUpdateCallback) return;
+    if(!adapter) return safeCallback(callback);
     if (!callback) callback = nop;
     var id = 'system.adapter.' + adapter.namespace;
     var vid = id + '.prevVersion';
     adapter.states.getState(vid, function(err, state) {
         var prevVersion = 0;
         var aktVersion = parseIntVersion(adapter.ioPack.common.version);
-
-        function callUpdate() {
-            doUpdateCallback(prevVersion, aktVersion, function(err) {
-                savePrevVersion(adapter);
-                //adapter.states.setState(vid, { val: adapter.ioPack.common.version, ack: true, from: id });
-                callback();
-            });
-        }
-
-        if (!err && state) {
-            prevVersion = parseIntVersion(state.val);
-            if (prevVersion < aktVersion) {
-                callUpdate();
+        prevVersion = parseIntVersion(hasProp(state, 'val') ? state.val : '0');
+        if (prevVersion < aktVersion) {
+            if (typeof doUpdateCallback == 'function') {
+                doUpdateCallback(prevVersion, aktVersion, function (err) {
+                    savePrevVersion();
+                    callback();
+                });
+                return;
             } else {
-                callback();
+                savePrevVersion();
             }
-            return;
         }
-        adapter.objects.setObject(vid, {
-            type: 'state',
-            common: {name: 'version', role: "indicator.state", desc: 'version check for updates'},
-            native: {}
-        }, function (err, obj) {
-            callUpdate();
-        });
+        callback();
     });
 }
 
@@ -970,8 +978,9 @@ function _main (_adapter, options, callback ) {
         };
     }
 
+    var timer;
+    var initDone = false;
     _adapter.getForeignObject('system.adapter.' + _adapter.namespace, function(err, obj) {
-        //if (!err && obj && obj.common && obj.common.enabled === false) {
         if (!err && getProp(obj, 'common.enabled') === false) {
             // running in debuger
             _adapter.log.debug = console.log;
@@ -979,10 +988,19 @@ function _main (_adapter, options, callback ) {
             _adapter.log.warn = console.log;
             module.parent.__DEBUG__ = true;
         }
+        if (!initDone) {
+            if(timer) clearTimeout(timer);
+            _devices.init(_adapter, function(err) {
+                callback();
+            });
+        }
+    });
+    timer = setTimeout(function() {
+        initDone = true;
         _devices.init(_adapter, function(err) {
             callback();
         });
-    });
+    }, 10000)
 };
 exports.main = _main;
 
@@ -999,7 +1017,9 @@ exports.Adapter = function (_args) {
                 break;
         }
     }
-    if (!fns.adapter) fns.adapter = require(__dirname + '/../../lib/utils').adapter;
+    if (!fns.adapter) {
+        fns.adapter = require(__dirname + '/../../lib/utils').adapter;
+    }
     var options = fns.options;
     if (!options.unload) {
         options.unload = function (callback) {
@@ -1029,14 +1049,18 @@ exports.Adapter = function (_args) {
     }
     if (!options.ready && fns.main) {
         options.ready = function () {
-            if (fns.onUpdate) {
-                checkIfUpdated(fns.onUpdate, function() {
-                    _main(fns.main);
-                });
-                return;
-            }
-            savePrevVersion();
-            _main(fns.main);
+            checkIfUpdated(fns.onUpdate, function() {
+                _main(fns.main);
+            });
+
+            //if (fns.onUpdate) {
+            //    checkIfUpdated(fns.onUpdate, function() {
+            //        _main(fns.main);
+            //    });
+            //    return;
+            //}
+            //savePrevVersion();
+            //_main(fns.main);
         }
     }
     if (!options.objectChange) {
@@ -1088,6 +1112,9 @@ exports.TimeDiff = function () {
     this.getMicros = function() {
         return this.getDif() / 1000 >> 0;
     };
+    this.start = function () {
+        this.start = this.get();
+    };
 
     this.start = process.hrtime();
     return this;
@@ -1100,6 +1127,12 @@ exports.Devices = Devices;
 exports.njs = njs;
 exports.extendGlobalNamespace = extendGlobalNamespace;
 
-var _sprintf = require('sprintf-js');
-exports.sprintf = _sprintf.sprintf;
-exports.vsprintf = _sprintf.vsprintf;
+try {
+    var _sprintf = require('sprintf-js');
+    exports.sprintf = _sprintf.sprintf;
+    exports.vsprintf = _sprintf.vsprintf;
+} catch(e) {
+    exports.sprintf = function(fs) { return 'sprintf-js not loaded ' + fs}
+    exports.vsprintf = exports.sprintf
+}
+
