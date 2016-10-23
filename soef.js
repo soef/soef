@@ -637,7 +637,8 @@ function Devices (_adapter, _callback) {
                 }
                 if (obj.common.name !== name) {
                     obj.common.name = name;
-                    adapter.setObject(id, {}, obj);
+                    //adapter.setObject(id, {}, obj);
+                    adapter.setObject(id, obj);
                 }
                 objects[id].common.name = name;
             });
@@ -842,6 +843,10 @@ function Devices (_adapter, _callback) {
         };
         this.setraw = function (id, val) {
             this._getobjex(id).val = val;
+        };
+        this.setName = function (name) {
+            var id = dcs(deviceName, channelName, '');
+            that.setObjectName(id, name);
         };
 
         this.add = this.set;
