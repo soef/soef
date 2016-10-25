@@ -702,9 +702,9 @@ function Devices (_adapter, _callback) {
 
 
     this.CDevice = function CDevice (_name, showName, list) {
-        if (!(this instanceof that.CDevice)) {
-            return new that.CDevice(_name, showName, list);
-        }
+        //if (!(this instanceof that.CDevice)) {
+        //    return new that.CDevice(_name, showName, list);
+        //}
 
         var deviceName = '', channelName = '';
         var self = this;
@@ -1126,6 +1126,99 @@ exports.TimeDiff = function () {
     this.start = process.hrtime();
     return this;
 }
+
+
+exports.bufferIndexOf = function (buffer, search, offset, encoding){
+    if (!Buffer.isBuffer(buffer)) return -1;
+
+    if (typeof offset === 'string') {
+        encoding = offset;
+        offset = 0;
+    }
+    switch (typeof search) {
+        case 'string':
+            search = new Buffer(search, encoding || 'utf8');
+            break;
+        case 'number':
+            search = new Buffer([search]);
+            break;
+        default:
+            if (Array.isArray(search)) break;
+            if (Buffer.isBuffer(search)) break;
+            return -1;
+    }
+
+    var blen = buffer.length,
+        slen = search.length;
+    if (slen === 0) return -1;
+
+    if (!offset || typeof offset != 'number') offset = 0;
+    else if (offset < 0) offset = buffer.length + offset;
+    if (offset < 0) offset = 0;
+
+    for (var i=offset; i < blen; i++) {
+
+        if(buffer[i] != search[0]) continue;
+        for (var j=1; j<slen && i+j<blen; j++) {
+            if(buffer[i+j] != search[j]) break;
+        }
+        if (j==slen) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+exports.bufferSplit = function (buffer, delimiter) {
+    var ar = [];
+
+    for (var start= 0, idx=0; start<buffer.length; ) {
+        idx = bufferIndexOf(buffer, delimiter, start);
+        if (idx < 0) break;
+        ar.push(buffer.slice(start, idx));
+        start = idx+delimiter.length;
+    }
+    if (start <= buffer.length) {
+        ar.push(buffer.slice(start, buffer.length));
+    }
+    return ar;
+}
+
+exports.bufferCat = function (buffer, chunk) {
+    if (!chunk.length) return buffer;
+    if (buffer && buffer.length) {
+        var newBuffer = new Buffer(chunk.length + buffer.length);
+        buffer.copy(newBuffer);
+        chunk.copy(newBuffer,buffer.length);
+        return newBuffer;
+    }
+    return chunk;
+}
+
+exports.Timer = function Timer (func, timeout, v1) {
+    if (!(this instanceof Timer)) {
+        return new Timer(func, timeout, v1);
+    }
+    var timer = null;
+    this.set = function (func, timeout, v1) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(function() {
+            timer = null;
+            func(v1);
+        }, timeout);
+    };
+    this.clear = function() {
+        if (timer) clearTimeout(timer);
+        var ret = !!timer;
+        timer = null;
+        return ret;
+    }
+    if (func) {
+        this.set(func, timeout, v1);
+    }
+};
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
