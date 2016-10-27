@@ -59,6 +59,7 @@ exports.getProp = getProp;
 
 var njs = {
 
+    pasProp: hasProp, 
     iscb: function (cb) {
         return typeof cb === 'function';
     },
@@ -246,7 +247,7 @@ var njs = {
                                 });
                                 return;
                             }
-                            adapter.deleteChannel(channels[c]._id, function () {
+                            adapter.deleteChannel(channels[c++]._id, function () {
                                 delc();
                             });
                         }
@@ -1218,7 +1219,122 @@ exports.Timer = function Timer (func, timeout, v1) {
     }
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+njs.dcs._forEach = forEachInSystemObjectView;
+function forEachInSystemObjectView(type, id, readyCallback, callback) {
+    adapter.objects.getObjectView('system', type, {startkey: id + '.', endkey: id + '.\u9999'}, null, function (err, res) {
+        if (err || !res || !res.rows) return readyCallback && readyCallback();
+        var i = 0;
+        function doIt() {
+            if (i >= res.rows.length) return readyCallback && readyCallback();
+            var o = res.rows[i++];
+            if (o) callback(o, doIt, type); else doIt();
+        }
+        doIt();
+    });
+};
+
+//function delObjectAndState(id, options, callback) {
+njs.dcs.delOS = delObjectAndState;
+function delObjectAndState(id, options, callback) {
+    if (typeof options == 'function') {
+        callback = options;
+        options = null;
+    }
+    adapter.states.delState(id, function(err) {
+        adapter.delObject(id, options, function (err) {
+            return callback && callback();
+        });
+    });
+}
+
+// callback first all states, then all devices and then all channels
+njs.dcs.forEach = forEachObjectChild;
+function forEachObjectChild(id, options, readyCallback, callback) {
+    if (typeof options === 'function') {
+        callback = readyCallback;
+        readyCallback = options;
+        options = null;
+    }
+    if (!callback) {
+        callback = readyCallback;
+        readyCallback = null;
+    }
+
+    if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + (id ? '.' + id : '');
+
+    function doChannels() {
+        forEachInSystemObjectView('channel', id, readyCallback, callback);
+    }
+    function doDevices() {
+        forEachInSystemObjectView('device', id, doChannels, function (o, next, type) {
+            callback(o, function() {
+                next(); //forEachObjectChild(o.id, options, callback, next);
+            }, type);
+        });
+    }
+    forEachInSystemObjectView('state', id, doDevices, callback);
+};
+
+//callback first all devices, then all channels and then all states
+njs.dcs.forEach2 = forEachObjectChild2;
+function forEachObjectChild2(id, options, readyCallback, callback) {
+    if (typeof options === 'function') {
+        callback = readyCallback;
+        readyCallback = options;
+        options = null;
+    }
+    if (!callback) {
+        callback = readyCallback;
+        readyCallback = null;
+    }
+
+    if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + (id ? '.' + id : '');
+
+    function doStates() {
+        forEachInSystemObjectView('state', id, readyCallback, callback);
+    }
+    function doChannels() {
+        forEachInSystemObjectView('channel', id, doStates, callback);
+    }
+    forEachInSystemObjectView('device', id, doChannels, callback);
+};
+
+
+njs.dcs.del = delObjectWithStates;
+function delObjectWithStates (id, options, callback) {
+    if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + '.' + id;
+    delObjectAndState(id, options, function (err) {
+        forEachObjectChild(id, callback, function(o, next, type) {
+            delObjectAndState(o.id, options, next);
+            devices.remove(idWithoutNamespace(o.id));
+        });
+        //return;
+        //function delChannels() {
+        //    forEachInSystemObjectView('channel', id, callback, function (channel, next) {
+        //        deleteObjectWithStates(channel.id, options, next);
+        //    });
+        //}
+        //
+        //forEachInSystemObjectView('state', id, delChannels, function (state, next) {
+        //    delObjectAndState(state.id, options, next);
+        //});
+    });
+};
+
+//forEachObjectChild2('', function(o, next, type) {
+//    console.log(type + ' ' + o.id);
+//    next();
+//});
+
+
+njs.dcs.delall = function (callback) {
+    var options = null;
+    forEachObjectChild('', callback, function(o, next, type) {
+        delObjectAndState(o.id, options, next);
+    });
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
