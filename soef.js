@@ -572,7 +572,8 @@ function Devices (_adapter, _callback) {
             }
         }
         if (showName && !hasProp(obj, 'common.name')) {
-            _fullExtend(obj, { common: { name: showName}});
+            //_fullExtend(obj, { common: { name: showName}});
+            _setobjname(obj, showName);
         }
         return obj;
     }
