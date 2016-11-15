@@ -339,6 +339,10 @@ var njs = {
     valtype: function (val) {
         switch (val) {
             //fastest way for most states
+            case true:
+                return true;
+            case false:
+                return false;
             case 'true':
                 return true;
             case 'false':
@@ -558,16 +562,16 @@ function Devices (_adapter, _callback) {
 
     function val2obj(valOrObj, showName) {
         //if (valOrObj === null) return;
-        if (!valOrObj) return;
+        //if (!valOrObj) return;
         if (typeof valOrObj === 'object') {
-            var obj = valOrObj;
+            var obj = valOrObj || {};
         } else {
             var obj = {};
             if (valOrObj !== undefined) {
                 obj.val = valtype(valOrObj);
             }
         }
-        if (showName) {
+        if (showName && !hasProp(obj, 'common.name')) {
             _fullExtend(obj, { common: { name: showName}});
         }
         return obj;
@@ -786,7 +790,8 @@ function Devices (_adapter, _callback) {
             }
             //var obj = val2obj(valOrObj, showName || name);
             //var obj = val2obj(valOrObj, valOrObj.common && valOrObj.common.name ? undefined : showName || name);
-            var obj = val2obj(valOrObj, hasProp(valOrObj, 'common.name') ? undefined : showName || name);
+            //var obj = val2obj(valOrObj, hasProp(valOrObj, 'common.name') ? undefined : showName || name);
+            var obj = val2obj(valOrObj, showName || name);
             obj._id = dcs(deviceName, channelName, name);
             obj.type = 'state';
             return push(obj);
