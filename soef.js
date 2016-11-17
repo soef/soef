@@ -766,6 +766,23 @@ function Devices (_adapter, _callback) {
                 }
             }
         };
+        this.setChannelEx = function (name, showNameOrObject) {
+            if (name === undefined) channelName = "";
+            else {
+                channelName = normalizedName(name);
+                var id = dcs(deviceName, channelName);
+                if (!that.has(id)) {
+                    if (typeof showNameOrObject == 'object') {
+                        var obj = {type: 'channel', _id: id, common: {name: name} };
+                        if (showNameOrObject.common) obj.common = showNameOrObject.common;
+                        if (showNameOrObject.native) obj.native = showNameOrObject.native;
+                    } else {
+                        var obj = {type: 'channel', _id: id, common: {name: showNameOrObject || name}};
+                    }
+                    return push(obj);
+                }
+            }
+        };
 
         function split(id, valOrObj, showName) {
             var ar = ((id && id[0] == '.') ? id.substr(1) : dcs(deviceName, channelName, id)).split('.');
