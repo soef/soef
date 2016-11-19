@@ -1,4 +1,4 @@
-﻿/**
+/**
  tools for an ioBroker Adapter v0.0.0.1
 
  Copyright (c) 2016 soef <soef@gmx.net>
@@ -1113,6 +1113,26 @@ exports.Adapter = function (_args) {
     return fns.adapter;
 };
 
+function changeAdapterConfig (_adapter, changeCallback, doneCallback) {
+    _adapter.getForeignObject("system.adapter." + _adapter.namespace, function (err, obj) {
+        if (!err && obj && !obj.native) obj['native'] = {};
+        if (!err && obj && changeCallback(obj.native) !== false) {
+            _adapter.setForeignObject(obj._id, obj, {}, function (err, s_obj) {
+                _adapter.log.info("config changed");
+                //_adapter.config = obj.native;   //?!?  nrmalisieren fehlt dann!!
+                //_adapter.normalizeConfig ...
+                if (doneCallback) doneCallback(err, obj);
+            });
+        }
+    });
+}
+exports.changeAdapterConfig = changeAdapterConfig;
+    
+exports.changeConfig = function changeConfig(changeCallback, doneCallback) {
+    if (!adapter) return false;
+    return changeAdapterConfig(adapter, changeCallback, doneCallback)
+}
+
 //module.exports =  function(useGlobalNamespace) {
 //    if (useGlobalNamespace) {
 //        //for (var i in njs) {
@@ -1232,10 +1252,12 @@ exports.Timer = function Timer (func, timeout, v1) {
         }, timeout);
     };
     this.clear = function() {
-        if (timer) clearTimeout(timer);
-        var ret = !!timer;
-        timer = null;
-        return ret;
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+            return true;
+        }
+        return false;
     }
     if (func) {
         this.set(func, timeout, v1);
