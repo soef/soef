@@ -909,6 +909,7 @@ function Devices (_adapter, _callback) {
     this.root = new this.CDevice('');
     this.init = function (_adapter, callback) {
         this.setAdapter(_adapter);
+        exports.ns = CNamespace(_adapter);
         this.readAllExistingObjects(callback);
     };
 
@@ -918,6 +919,26 @@ function Devices (_adapter, _callback) {
 
     return this;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+var CNamespace = function (_adapter) {
+    if (!(this instanceof CNamespace)) {
+        return new CNamespace(_adapter);
+    }
+    
+    var re = new RegExp('^' + _adapter.namespace + '.|^'); //  new/^adapter.0.|^/, '')
+    var isre = new RegExp('^' + _adapter.namespace);
+    this.no = function no (s) {
+        return s.replace(re, '');
+    };
+    this.remove = this.no;
+    this.is = isre.test.bind(isre); //.bind(this);
+    this.add = function add (s) {
+        return s.replace(re, _adapter.namespace + '.')
+    }
+};
+exports.CNamespace = CNamespace;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
