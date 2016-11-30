@@ -90,6 +90,27 @@ var njs = {
         return dest;
     },
 
+    clone: function (from) {
+        var props = Object.getOwnPropertyNames(from), destination, dest = {};
+        
+        props.forEach(function (name) {
+            if (from[name] instanceof Array) {
+                //dest[name] = new Array(from[name]);
+                dest[name] = [].concat(from[name]);
+            } else
+            if (typeof from[name] === 'object') {
+                if (typeof dest[name] !== 'object') {
+                    dest[name] = {}
+                }
+                _fullExtend(dest[name],from[name]);
+            } else {
+                destination = Object.getOwnPropertyDescriptor(from, name);
+                Object.defineProperty(dest, name, destination);
+            }
+        });
+        return dest;
+    },
+
     safeCallback: function safeCallback(callback, val1, val2) {
         if (njs.iscb(callback)) {
             callback(val1, val2);
