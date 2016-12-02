@@ -1025,6 +1025,16 @@ function checkIfUpdated(doUpdateCallback, callback) {
 }
 
 
+function switchToDebug(force) {
+    if (!adapter || !adapter.log) return;
+    if (!force && !process.env.SOEF_DEBUG) return;
+    adapter.log.debug = console.log;
+    adapter.log.info = console.log;
+    adapter.log.warn = console.log;
+    module.parent.__DEBUG__ = true;
+}
+exports.switchToDebug = switchToDebug;
+
 function _main (_adapter, options, callback ) {
 
     if (!_adapter || !_adapter.adapterDir) {
@@ -1051,29 +1061,10 @@ function _main (_adapter, options, callback ) {
         };
     }
 
-    var timer;
-    var initDone = false;
-    _adapter.getForeignObject('system.adapter.' + _adapter.namespace, function(err, obj) {
-        if (!err && getProp(obj, 'common.enabled') === false) {
-            // running in debuger
-            _adapter.log.debug = console.log;
-            _adapter.log.info = console.log;
-            _adapter.log.warn = console.log;
-            module.parent.__DEBUG__ = true;
-        }
-        if (!initDone) {
-            if(timer) clearTimeout(timer);
-            _devices.init(_adapter, function(err) {
-                callback();
-            });
-        }
+    switchToDebug();
+    _devices.init(_adapter, function(err) {
+        callback();
     });
-    timer = setTimeout(function() {
-        initDone = true;
-        _devices.init(_adapter, function(err) {
-            callback();
-        });
-    }, 10000)
 };
 exports.main = _main;
 
