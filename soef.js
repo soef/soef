@@ -116,7 +116,19 @@ var njs = {
             callback(val1, val2);
         }
     },
-
+    
+    forEachArrayCallback: function forEachArrayCallback (arr, readyCallback, func) {
+        var cnt = -1, len = arr.length;
+        
+        function doit() {
+            if (++cnt >= len) {
+                return readyCallback && readyCallback();
+            }
+            func(arr[cnt], doit);
+        }
+        doit();
+    },
+    
     forEachCB: function (maxcnt, func, readyCallback) {
         var cnt = -1;
 
