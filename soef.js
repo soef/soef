@@ -1320,6 +1320,10 @@ function forEachObjectChild2(id, options, readyCallback, callback) {
 
 njs.dcs.del = delObjectWithStates;
 function delObjectWithStates (id, options, callback) {
+    if (typeof options === 'function') {
+        callback = options;
+        options = undefined;
+    }
     if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + '.' + id;
     delObjectAndState(id, options, function (err) {
         forEachObjectChild(id, callback, function(o, next, type) {
