@@ -896,6 +896,9 @@ var CNamespace = function (_adapter) {
     this.add = function add (s) {
         return s.replace(re, _adapter.namespace + '.')
     }
+    this.add2 = function add (s) {
+        return s.replace(re, _adapter.namespace + (s ? '.' : ''));
+    }
 };
 exports.CNamespace = CNamespace;
 
@@ -1324,7 +1327,8 @@ function delObjectWithStates (id, options, callback) {
         callback = options;
         options = undefined;
     }
-    if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + '.' + id;
+    //if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + '.' + id;
+    exports.ns.add(id);
     delObjectAndState(id, options, function (err) {
         forEachObjectChild(id, callback, function(o, next, type) {
             delObjectAndState(o.id, options, next);
