@@ -441,6 +441,12 @@ function Devices (_adapter, _callback) {
     this._getobjex = function(id) {
         return this.getobjex(id) || { val: undefined };
     };
+    this.getval = function (id, _default) {
+         var o = this.get(id);
+         if (o && o.val !== undefined) return o.val;
+         return _default;
+    };
+
     this.invalidate = function (id) {
         this._getobjex(id).val = undefined;
     };
