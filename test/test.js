@@ -41,7 +41,7 @@ describe('Test soef', function() {
     });
 
     it('Timer()', function (done) {
-        this.timeout(1010);
+        this.timeout(1500);
 		var timer = soef.Timer();
 		timer.set(function(v) {
             //expect(v).to.be.null;
