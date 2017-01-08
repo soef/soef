@@ -1,4 +1,4 @@
-###Library for iobroker
+###Library for ioBroker
 
 [![NPM version](http://img.shields.io/npm/v/soef.svg)](https://www.npmjs.com/package/soef)
 [![Tests](http://img.shields.io/travis/soef/soef/master.svg)](https://travis-ci.org/soef/soef)

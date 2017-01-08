@@ -1395,6 +1395,94 @@ function extendArray () {
         if(arr == undefined) return false;
         return this.length==arr.length && this.every(function(v,i) { return v === arr[i]});
     };
+	Array.prototype.unique = function (cb) {
+		var oldLen = this.length;
+		switch (typeof cb) {
+			case 'undefined':
+				for (var i = 0; i < this.length; i++) {
+					var v = this [i];
+					for (var j = i + 1; j < this.length; j++) {
+						if (this[j] === v) {
+							this.splice(j, 1);
+							j--;
+						}
+					}
+				}
+				break;
+			case 'string':
+				for (var i = 0; i < this.length; i++) {
+					var v = this [i];
+					for (var j = i + 1; j < this.length; j++) {
+						if (this[j][cb] === v [cb]) {
+							this.splice(j, 1);
+							j--;
+						}
+					}
+				}
+				break;
+			case 'function':
+				for (var i = 0; i < this.length; i++) {
+					var v = this [i];
+					for (var j = i + 1; j < this.length; j++) {
+						if (cb(this[j], v)) {
+							this.splice(j, 1);
+							j--;
+						}
+					}
+				}
+				break;
+		}
+		return oldLen != this.length;
+	};
+
+	Array.prototype.uniquef = function (cb) {
+		var a = [];
+		switch (typeof cb) {
+			case 'undefined':
+				this.forEach(function(v) {
+					if (!a.find(function (f) {
+							return f === v;
+						})) {
+						a.push(v);
+					}
+				});
+				break;
+			case 'string':
+				this.forEach(function (v) {
+					if (!a.find(function (f) {
+							return f [cb] === v [cb];
+						})) {
+						a.push(v);
+					}
+				});
+				break;
+			case 'function':
+				this.forEach(function(v) {
+					if (!a.find(function (f) {
+							return cb (f, v);
+						})) {
+						a.push(v);
+					}
+				});
+				break;
+		}
+		return a;
+	};
+	
+	Array.prototype.contains = function(propertyName, entry) {
+		return this.find(function(v) {
+			return v[propertyName] === entry[propertyName];
+		})  
+	};
+
+	Array.prototype.add = function (v) {
+		if (!this.contains(v)) {
+			this.push(v);
+			return true;
+		}  
+		return false;
+	};
+
 };
 exports.extendArray = extendArray;
 
