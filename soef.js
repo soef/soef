@@ -1016,7 +1016,8 @@ function _main (_adapter, options, callback ) {
 exports.main = _main;
 
 exports.Adapter = function (_args) {
-    var args = arguments, fns = {};
+    var args = arguments,
+        fns = {};
     for (var i=0; i<args.length; i++) {
         var param = args[i];
         switch (typeof param) {
@@ -1025,6 +1026,10 @@ exports.Adapter = function (_args) {
                 break;
             case 'object':
                 fns.options = param;
+                break;
+            case 'string':
+                fns.options = fns.options || {};
+                fns.options.name = param;
                 break;
         }
     }
@@ -1098,7 +1103,7 @@ function changeAdapterConfig (_adapter, changeCallback, doneCallback) {
         if (!err && obj && !obj.native) obj['native'] = {};
         if (!err && obj && changeCallback(obj.native) !== false) {
             _adapter.setForeignObject(obj._id, obj, {}, function (err, s_obj) {
-                _adapter.log.info("config changed");
+                _adapter.log.info("soef.changeAdapterConfig: changed");
                 //_adapter.config = obj.native;   //?!?  nrmalisieren fehlt dann!!
                 //_adapter.normalizeConfig ...
                 if (doneCallback) doneCallback(err, obj);
@@ -1499,7 +1504,15 @@ exports.extendAll = function () {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+var log = function (fmt, args) {
+    adapter.log.info(exports.sprintf.apply (null, arguments));
+}
+    
+log.error = function(fmt, args) { adapter.log.error(exports.sprintf.apply (null, arguments)); },
+log.info =  function(fmt, args) { adapter.log.info(exports.sprintf.apply (null, arguments)); },
+log.debug = function(fmt, args) { adapter.log.debug(exports.sprintf.apply (null, arguments)); }
 
+exports.log = log;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
