@@ -1474,11 +1474,27 @@ function extendArray () {
 		return a;
 	};
 	
-	Array.prototype.contains = function(propertyName, entry) {
-		return this.find(function(v) {
-			return v[propertyName] === entry[propertyName];
-		})  
-	};
+	//Array.prototype.contains = function(propertyName, entry) {
+	//	return this.find(function(v) {
+	//		return v[propertyName] === entry[propertyName];
+	//	})  
+	//};
+    Array.prototype.contains = function(propertyName, entry) {
+        if(!Array.isArray(entry)) {
+            return this.find(function (v) {
+                return v[propertyName] === entry[propertyName];
+            })
+        }
+        var found = false;
+        for(var i=entry.length-1; i>=0; i--) {
+            var found = this.find(function(v) {
+                return v[propertyName] === entry[i][propertyName];
+            });
+            if (found) return found;
+        }
+        return false;
+    };
+	
 
 	Array.prototype.add = function (v) {
 		if (!this.contains(v)) {
@@ -1487,6 +1503,47 @@ function extendArray () {
 		}  
 		return false;
 	};
+	
+	Array.prototype.lastThat = function (cb) {
+		for (var i=this.length-1; i>=0; i--) {
+			cb (this[i], i, this);
+		}
+	};
+
+	Array.prototype.removeDup = function (propName, arr) {
+		if (!this.length) return 0;
+		var oldLen = this.length;
+		if (arr === undefined) {
+			arr = propName;
+			propName = undefined;
+		}
+		if (!Array.isArray(arr)) {
+			if (!propName) {
+				for (var i = this.length - 1; i >= 0; i--) {
+					if (this[i] === arr) {
+						this.splice(i, 1);
+					}
+				}
+			} else {
+				for (var i = this.length - 1; i >= 0; i--) {
+					if (this[i][propName] === arr[propName]) {
+						this.splice(i, 1);
+					}
+				}
+			}
+			return oldLen - this.length;
+		}
+
+		// for (var i=arr.length-1; i>=0; i--) {
+		//     this.removeDup(propName, arr[i]);
+		//     while (i >= arr.length) i--;
+		// }
+		arr.forEach(function(v) {
+			this.removeDup(propName, v);
+		}.bind(this));
+		return oldLen - this.length;
+	};
+
 
 };
 exports.extendArray = extendArray;
@@ -1510,7 +1567,17 @@ var log = function (fmt, args) {
     
 log.error = function(fmt, args) { adapter.log.error(exports.sprintf.apply (null, arguments)); },
 log.info =  function(fmt, args) { adapter.log.info(exports.sprintf.apply (null, arguments)); },
-log.debug = function(fmt, args) { adapter.log.debug(exports.sprintf.apply (null, arguments)); }
+log.debug = function(fmt, args) {
+    if (adapter.common.loglevel !== 'debug') {
+        log.debug = function() {};
+        return;
+    }
+    log.debug = function(fmt, args) {
+        adapter.log.debug(exports.sprintf.apply (null, arguments));
+    }
+    adapter.log.debug(exports.sprintf.apply (null, arguments));
+}
+log.warn  = function(fmt, args) { adapter.log.warn(exports.sprintf.apply (null, arguments)); }
 
 exports.log = log;
 
