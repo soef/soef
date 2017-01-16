@@ -1,6 +1,6 @@
 {
   "name": "soef",
-  "version": "0.1.35",
+  "version": "0.1.39",
   "description": "library for ioBroker",
   "author": {
     "name": "soef",
@@ -19,7 +19,8 @@
     "Home automation"
   ],
   "dependencies": {
-    "sprintf-js": "^1.0.3"
+    "sprintf-js": "^1.0.3",
+    "array-ext": "^0.1.0"
   },
   "devDependencies": {
     "mocha": "^2.3.4",

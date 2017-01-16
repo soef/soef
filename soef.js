@@ -1389,7 +1389,12 @@ function arrayToHex(ar, len) {
 }
 exports.arrayToHex = arrayToHex;
 
+
+
 function extendArray () {
+
+    require('array-ext');
+/*
     Array.prototype.forEachCallback = function forEachCallback (readyCallback, func) {
         return njs.forEachArrayCallback(this, readyCallback, func);
     };
@@ -1543,7 +1548,7 @@ function extendArray () {
 		}.bind(this));
 		return oldLen - this.length;
 	};
-
+*/
 
 };
 exports.extendArray = extendArray;
@@ -1558,6 +1563,77 @@ exports.extendAll = function () {
     extendArray ();
     extendNumber();
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+exports.deleteOrphanedDevices = function (propName, _validArr, cb) {
+    if (!adapter || !adapter.adapterDir) return;
+    if (typeof propName !== 'string') {
+        cb = _validArr;
+        _validArr = propName;
+        propName = undefined;
+    }
+    
+    var validArr = [];
+    _validArr.forEach(function(v) {
+        validArr.push(normalizedName(propName ? v[propName] : v));
+    });
+    
+    adapter.getDevices(function(err, res) {
+        if (err || !res || res.length <= 0) return cb && cb();
+        
+        // res.lastThat(function(obj, i) {
+        //     var v1 = obj._id.split('.')[2];
+        //     validArr.find(function(v) {
+        //          if (v === v1) {
+        //              res.splice(i, 1);
+        //              return true;
+        //          }
+        //     });
+        // });
+        // res.forEachCallback(function(next, id) {
+        //     dcs.del(id, next);
+        // }, cb);
+        
+        var toDelete = [];
+        res.forEach(function(obj) {
+            var v1 = obj._id.split('.')[2];
+            if (!validArr.contains(v1)) {
+                toDelete.push(obj._id);
+            }
+            // if (!validArr.find(function(v) {
+            //     return v === v1;
+            // })) {
+            //     toDelete.push(obj._id);
+            // }
+        });
+        toDelete.forEachCallback(function(next, id) {
+            dcs.del(id, next);
+        }, cb);
+    });
+}
+
+var _fs;
+exports.existFile = function (fn) {
+    try {
+        _fs = _fs || require('fs');
+        var stats = _fs.lstatSync(fn);
+        return stats.isFile();
+    } catch(e) {
+    }
+    return false;
+}
+exports.existDirectory = function (path) {
+    try {
+        _fs = _fs || require('fs');
+        var stats = _fs.lstatSync(path);
+        return stats.isDirectory();
+    } catch(e) {
+    }
+    return false;
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
