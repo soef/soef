@@ -27,6 +27,22 @@
 //}
 //determinateNodeVersion();
 
+if (!Object.assign) {
+    Object.prototype.assign = function (target) {
+        target = target || {};
+        for (var i = 1; i < arguments.length; i++) {
+            var source = arguments[i];
+            for (var key in source) {
+                if (Object.prototype.hasOwnProperty.call(source, key)) {
+                    target[key] = source[key];
+                }
+            }
+        }
+        return target;
+    };
+}
+
+
 function hasProp (obj, propString) {
     if (!obj) return false;
     var ar = propString.split('.');
@@ -579,9 +595,12 @@ function Devices (_adapter, _callback) {
             list = null;
         }
         if (!list || that.list === list) {
-            list = that.list;
-            that.list = [];
-            if (that.root.list) that.root.list = that.list;
+            //list = that.list;
+            //that.list = [];
+            //if (that.root.list) that.root.list = that.list;
+            list = that.list.slice();
+            that.list.length = 0;
+			
         }
         if (!list || list.length == 0) return safeCallback(callback, -1);
 
@@ -860,6 +879,19 @@ function Devices (_adapter, _callback) {
         };
         this.setImmediately = this.setAndUpdate;
 
+        this.clear = function(id) {
+            id = exports.ns.no (id);
+            var st = that.getobjex(id);
+            if (st === undefined) return;
+            switch(typeof st.val) {
+                case 'string': st = ''; break;
+                case 'boolean': st = false; break;
+                case 'number': st = 0; break;
+                default: return;
+            }
+            this.setAndUpdate(id, st);
+        };
+		
         this.update = function (callback) {
             if (this.list.length > 0) {
                 that.update(this.list, callback);
@@ -1632,7 +1664,7 @@ exports.existDirectory = function (path) {
     }
     return false;
 }
-
+exports.isWin = process.platform === 'win32';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
