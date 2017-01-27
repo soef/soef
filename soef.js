@@ -1,31 +1,12 @@
 /**
- tools for an ioBroker Adapter v0.0.0.1
-
- Copyright (c) 2016 soef <soef@gmx.net>
+ 
+ Copyright (c) 2016 - 2017 soef <soef@gmx.net>
  All rights reserved.
-
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL Alexandru Marasteanu BE LIABLE FOR ANY
- DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+ 
  **/
 
 "use strict";
 
-//var ES6 = false;
-//
-//function determinateNodeVersion() {
-//    var ar = process.version.substr(1).split('.');
-//    ES6 = ar[0] >> 0 > 0 || (ar[1] >> 0 >= 12);
-//}
-//determinateNodeVersion();
 
 if (!Object.assign) {
     Object.prototype.assign = function (target) {
@@ -56,6 +37,36 @@ function hasProp (obj, propString) {
 exports.hasProp = hasProp;
 exports.hasProperty = hasProp;
 
+function getLastValidProp (obj, propString) {
+    if (!obj) return undefined;
+    var ar = propString.split('.');
+    var len = ar.length;
+    for (var i = 0; i < len; i++) {
+        if (obj[ar[i]] === undefined) return obj;
+        obj = obj[ar[i]];
+    }
+    return obj;
+}
+exports.getLastValidProp = getLastValidProp;
+
+function getLastValidPropEx (obj, propString) {
+    if (!obj) return undefined;
+    var ar = propString.split('.');
+    var len = ar.length;
+    for (var i = 0; i < len; i++) {
+        if (obj[ar[i]] === undefined) {
+            var ret = { obj: {}, invalifName: '', errPath: ''};
+            try { ret = {obj: obj, invalidName: ar[i], errPath: ar.slice(i).join('.')}; }
+            catch (e) {}
+            return ret;
+        }
+        obj = obj[ar[i]];
+    }
+    return { obj: {}, invalifName: '', errPath: ''};
+}
+exports.getLastValidPropEx = getLastValidPropEx;
+
+
 function getProp (obj, propString) {
     if (!obj) return undefined;
     var ar = propString.split('.');
@@ -68,10 +79,29 @@ function getProp (obj, propString) {
 }
 exports.getProp = getProp;
 
-//Object.prototype.hasProp = function(v) {
-//    return hasProp (this,v);
-//};
+function safeFunction(root, path, log) {
+    var fn = soef.getProp(root, path);
+    if (typeof fn === 'function') return fn;
+    if (log) {
+        var err = getLastValidPropEx(root, path);
+        if (typeof log !== 'function') log = adapter.log.debug;
+        log(err.errPath + ' is not a function (' + path +')');
+    }
+    return function (params, callback) {
+        if (!arguments.length) return;
+        var fn = arguments [arguments.length-1];
+        if (typeof fn === 'function') {
+            fn(new Error(path + ' is not a function'));
+        }
+    }
+}
+exports.safeFunction = safeFunction;
+exports.getFnProp = function(root, path, log) {
+	if (typeof log !== 'function') log = function() {};
+	return safeFunction(root, path, log);
+}
 
+////////////////////////////////////////////////////////////////////////////////////
 
 var njs = {
 
@@ -205,19 +235,12 @@ var njs = {
             return stateName.substr(1);
         }
         var ret = '';
-        //if (ES6) {
-        //    for (var i of [deviceName, channelName, stateName]) {
-        //        if (!ret) ret = i;
-        //        else if (i) ret += '.' + i;
-        //    }
-        //} else {
         var ar = [deviceName, channelName, stateName];
-        for (var i = 0; i < ar.length; i++) {//[deviceName, channelName, stateName]) {
+        for (var i = 0; i < ar.length; i++) {
             var s = ar[i];
             if (!ret) ret = s;
             else if (s) ret += '.' + s;
         }
-        //}
         return ret;
     },
 
@@ -249,9 +272,6 @@ var njs = {
         })
     },
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //hasProp: hasProp,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -370,7 +390,6 @@ var njs = {
 
 for (var i in njs) {
     global[i] = njs[i];
-    //module.parent[i] = njs[i];
 }
 
 function extendGlobalNamespace() {
@@ -382,7 +401,6 @@ function extendGlobalNamespace() {
 var adapter;
 function errmsg () { console.debug("adapter not assigned, use Device.setAdapter(yourAdapter)") };
 
-//if (module.parent.exports['adapter']) {
 if (hasProp(module, 'parent.exports.adapter')) {
     adapter = module.parent.exports.adapter;
 } else {
@@ -634,7 +652,6 @@ function Devices (_adapter, _callback) {
                 }
                 if (obj.common.name !== name) {
                     obj.common.name = name;
-                    //adapter.setObject(id, {}, obj);
                     adapter.setObject(id, obj);
                 }
                 objects[id].common.name = name;
@@ -1100,15 +1117,6 @@ exports.Adapter = function (_args) {
             checkIfUpdated(fns.onUpdate, function() {
                 _main(fns.main);
             });
-
-            //if (fns.onUpdate) {
-            //    checkIfUpdated(fns.onUpdate, function() {
-            //        _main(fns.main);
-            //    });
-            //    return;
-            //}
-            //savePrevVersion();
-            //_main(fns.main);
         }
     }
     if (!options.objectChange) {
@@ -1149,16 +1157,6 @@ exports.changeConfig = function changeConfig(changeCallback, doneCallback) {
     if (!adapter) return false;
     return changeAdapterConfig(adapter, changeCallback, doneCallback)
 }
-
-//module.exports =  function(useGlobalNamespace) {
-//    if (useGlobalNamespace) {
-//        //for (var i in njs) {
-//        //    module.parent[i] = njs[i];
-//        //}
-//        extendGlobalNamespace ();
-//    }
-//    return { Devices: Devices, CDeviceQueue: CDeviceQueue, /*njs: njs,*/ extendGlobalNamespace: extendGlobalNamespace}
-//}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1297,7 +1295,6 @@ function forEachInSystemObjectView(type, id, readyCallback, callback) {
     });
 };
 
-//function delObjectAndState(id, options, callback) {
 njs.dcs.delOS = delObjectAndState;
 function delObjectAndState(id, options, callback) {
     if (typeof options == 'function') {
@@ -1377,23 +1374,8 @@ function delObjectWithStates (id, options, callback) {
             delObjectAndState(o.id, options, next);
             devices.remove(idWithoutNamespace(o.id));
         });
-        //return;
-        //function delChannels() {
-        //    forEachInSystemObjectView('channel', id, callback, function (channel, next) {
-        //        deleteObjectWithStates(channel.id, options, next);
-        //    });
-        //}
-        //
-        //forEachInSystemObjectView('state', id, delChannels, function (state, next) {
-        //    delObjectAndState(state.id, options, next);
-        //});
     });
 };
-
-//forEachObjectChild2('', function(o, next, type) {
-//    console.log(type + ' ' + o.id);
-//    next();
-//});
 
 
 njs.dcs.delall = function (callback) {
@@ -1414,7 +1396,6 @@ function arrayToHex(ar, len) {
     var s = "";
     if (len == undefined) len = ar.length;
     for (var i=0; i<len; i++) {
-        //s += ar[i].toHex() + ' ';
         s += toHex(ar[i]) + ' ';
     }
     return s;
@@ -1424,164 +1405,7 @@ exports.arrayToHex = arrayToHex;
 
 
 function extendArray () {
-
     require('array-ext');
-/*
-    Array.prototype.forEachCallback = function forEachCallback (readyCallback, func) {
-        return njs.forEachArrayCallback(this, readyCallback, func);
-    };
-    Array.prototype.toHex = function () {
-        return arrayToHex(this);
-    };
-    Array.prototype.eq = function (arr) {
-        if(arr == undefined) return false;
-        return this.length==arr.length && this.every(function(v,i) { return v === arr[i]});
-    };
-	Array.prototype.unique = function (cb) {
-		var oldLen = this.length;
-		switch (typeof cb) {
-			case 'undefined':
-				for (var i = 0; i < this.length; i++) {
-					var v = this [i];
-					for (var j = i + 1; j < this.length; j++) {
-						if (this[j] === v) {
-							this.splice(j, 1);
-							j--;
-						}
-					}
-				}
-				break;
-			case 'string':
-				for (var i = 0; i < this.length; i++) {
-					var v = this [i];
-					for (var j = i + 1; j < this.length; j++) {
-						if (this[j][cb] === v [cb]) {
-							this.splice(j, 1);
-							j--;
-						}
-					}
-				}
-				break;
-			case 'function':
-				for (var i = 0; i < this.length; i++) {
-					var v = this [i];
-					for (var j = i + 1; j < this.length; j++) {
-						if (cb(this[j], v)) {
-							this.splice(j, 1);
-							j--;
-						}
-					}
-				}
-				break;
-		}
-		return oldLen != this.length;
-	};
-
-	Array.prototype.uniquef = function (cb) {
-		var a = [];
-		switch (typeof cb) {
-			case 'undefined':
-				this.forEach(function(v) {
-					if (!a.find(function (f) {
-							return f === v;
-						})) {
-						a.push(v);
-					}
-				});
-				break;
-			case 'string':
-				this.forEach(function (v) {
-					if (!a.find(function (f) {
-							return f [cb] === v [cb];
-						})) {
-						a.push(v);
-					}
-				});
-				break;
-			case 'function':
-				this.forEach(function(v) {
-					if (!a.find(function (f) {
-							return cb (f, v);
-						})) {
-						a.push(v);
-					}
-				});
-				break;
-		}
-		return a;
-	};
-	
-	//Array.prototype.contains = function(propertyName, entry) {
-	//	return this.find(function(v) {
-	//		return v[propertyName] === entry[propertyName];
-	//	})  
-	//};
-    Array.prototype.contains = function(propertyName, entry) {
-        if(!Array.isArray(entry)) {
-            return this.find(function (v) {
-                return v[propertyName] === entry[propertyName];
-            })
-        }
-        var found = false;
-        for(var i=entry.length-1; i>=0; i--) {
-            var found = this.find(function(v) {
-                return v[propertyName] === entry[i][propertyName];
-            });
-            if (found) return found;
-        }
-        return false;
-    };
-	
-
-	Array.prototype.add = function (v) {
-		if (!this.contains(v)) {
-			this.push(v);
-			return true;
-		}  
-		return false;
-	};
-	
-	Array.prototype.lastThat = function (cb) {
-		for (var i=this.length-1; i>=0; i--) {
-			cb (this[i], i, this);
-		}
-	};
-
-	Array.prototype.removeDup = function (propName, arr) {
-		if (!this.length) return 0;
-		var oldLen = this.length;
-		if (arr === undefined) {
-			arr = propName;
-			propName = undefined;
-		}
-		if (!Array.isArray(arr)) {
-			if (!propName) {
-				for (var i = this.length - 1; i >= 0; i--) {
-					if (this[i] === arr) {
-						this.splice(i, 1);
-					}
-				}
-			} else {
-				for (var i = this.length - 1; i >= 0; i--) {
-					if (this[i][propName] === arr[propName]) {
-						this.splice(i, 1);
-					}
-				}
-			}
-			return oldLen - this.length;
-		}
-
-		// for (var i=arr.length-1; i>=0; i--) {
-		//     this.removeDup(propName, arr[i]);
-		//     while (i >= arr.length) i--;
-		// }
-		arr.forEach(function(v) {
-			this.removeDup(propName, v);
-		}.bind(this));
-		return oldLen - this.length;
-	};
-*/
-
 };
 exports.extendArray = extendArray;
 
@@ -1614,30 +1438,12 @@ exports.deleteOrphanedDevices = function (propName, _validArr, cb) {
     adapter.getDevices(function(err, res) {
         if (err || !res || res.length <= 0) return cb && cb();
         
-        // res.lastThat(function(obj, i) {
-        //     var v1 = obj._id.split('.')[2];
-        //     validArr.find(function(v) {
-        //          if (v === v1) {
-        //              res.splice(i, 1);
-        //              return true;
-        //          }
-        //     });
-        // });
-        // res.forEachCallback(function(next, id) {
-        //     dcs.del(id, next);
-        // }, cb);
-        
         var toDelete = [];
         res.forEach(function(obj) {
             var v1 = obj._id.split('.')[2];
             if (!validArr.contains(v1)) {
                 toDelete.push(obj._id);
             }
-            // if (!validArr.find(function(v) {
-            //     return v === v1;
-            // })) {
-            //     toDelete.push(obj._id);
-            // }
         });
         toDelete.forEachCallback(function(next, id) {
             dcs.del(id, next);
