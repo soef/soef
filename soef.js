@@ -1083,7 +1083,12 @@ exports.Adapter = function (_args) {
         }
     }
     if (!fns.adapter) {
-        fns.adapter = require(__dirname + '/../../lib/utils').adapter;
+        try {
+            fns.adapter = require(__dirname + '/../../lib/utils').adapter;
+        }
+        catch(e) {
+            fns.adapter = require(__dirname + '/../iobroker.admin/lib/utils').adapter;
+        }
     }
     var options = fns.options;
     if (!options.unload) {
