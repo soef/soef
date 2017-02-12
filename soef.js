@@ -80,7 +80,7 @@ function getProp (obj, propString) {
 exports.getProp = getProp;
 
 function safeFunction(root, path, log) {
-    var fn = soef.getProp(root, path);
+    var fn = getProp(root, path);
     if (typeof fn === 'function') return fn;
     if (log) {
         var err = getLastValidPropEx(root, path);
@@ -423,7 +423,8 @@ function getObject(id, options, callback) {
     return adapter.objects.getObject(adapter.namespace + '.' + id, options, callback);
 }
 function setState(id, val, ack) {
-    ack = ack || true;
+    //ack = ack || true;
+	if (ack === undefined) ack = true;
     adapter.setState(id, val, ack);
 }
 
@@ -543,7 +544,8 @@ function Devices (_adapter, _callback) {
     this.setState = function (id, val, ack) {
         if (val !== undefined) objects[id].val = val;
         else val = objects[id].val;
-        ack = ack || true;
+        //ack = ack || true;
+		if (ack === undefined) ack=true;
         setState(id, val, ack);
     };
 
@@ -1499,6 +1501,55 @@ log.debug = function(fmt, args) {
 log.warn  = function(fmt, args) { adapter.log.warn(exports.sprintf.apply (null, arguments)); }
 
 exports.log = log;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+var xmlParser, http;
+                                                        
+function getHttpData(url, options, cb) {
+    if (!http) try { http = require('http'); } catch(e) { return cb && cb(-1) };
+    if (cb == undefined) {
+        cb = options;
+        options = undefined;
+    }
+    
+    if (options && options.xml2json && xmlParser === -1) return cb && cb(-1);
+    
+    var request = http.get(url, function(response) {
+        var data = '';
+        response.on('data', function(d) {
+            data += d;
+        });
+        response.on('end', function() {
+            
+            if (options && options.xml2json) {
+                if (xmlParser === undefined) try {
+                    xmlParser = new require('xml2js').Parser({
+                        explicitArray: false,
+                        mergeAttrs: true,
+                        normalizeTags: true,
+                        ignoreAttrs: true
+                    });
+                } catch (e) {
+                    xmlParser = -1;
+                    return cb && cb (-1);
+                }
+            
+                xmlParser.parseString(data, function (err, json) {
+                    cb(err, json);
+                });
+                return;
+            }
+            cb && cb(0, data);
+        });
+    });
+    request.on('error', function(e) {
+        console.error(e);
+    });
+    request.end();
+    
+}
+exports.getHttpData = getHttpData;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
