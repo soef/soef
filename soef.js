@@ -34,7 +34,7 @@ function hasProp (obj, propString) {
     }
     return true;
 }
-exports.hasProp = hasProp;
+exports.hasProp = 
 exports.hasProperty = hasProp;
 
 function getLastValidProp (obj, propString) {
@@ -79,7 +79,8 @@ function getProp (obj, propString) {
 }
 exports.getProp = getProp;
 
-function safeFunction(root, path, log) {
+var safeFunction =
+exports.safeFunction = function (root, path, log) {
     var fn = getProp(root, path);
     if (typeof fn === 'function') return fn;
     if (log) {
@@ -94,12 +95,12 @@ function safeFunction(root, path, log) {
             fn(new Error(path + ' is not a function'));
         }
     }
-}
-exports.safeFunction = safeFunction;
+};
+
 exports.getFnProp = function(root, path, log) {
 	if (typeof log !== 'function') log = function() {};
 	return safeFunction(root, path, log);
-}
+};
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -124,7 +125,7 @@ var njs = {
                 if (typeof dest[name] !== 'object') {
                     dest[name] = {}
                 }
-                _fullExtend(dest[name],from[name]);
+                njs._fullExtend(dest[name],from[name]);
             } else {
                 destination = Object.getOwnPropertyDescriptor(from, name);
                 Object.defineProperty(dest, name, destination);
@@ -136,7 +137,7 @@ var njs = {
         return dest;
     },
 
-    clone: function (from) {
+    clone_old: function (from) {
         var props = Object.getOwnPropertyNames(from), destination, dest = {};
         
         props.forEach(function (name) {
@@ -156,7 +157,31 @@ var njs = {
         });
         return dest;
     },
-
+    
+    clone: function _clone_ (from) {
+        var props = Object.getOwnPropertyNames(from), destination, dest = {};
+        
+        props.forEach(function (name) {
+            if (from[name] instanceof Array) {
+                dest[name] = [].concat(from[name]);
+                // var v = _clone_(from[name]);
+                // dest[name] = [].concat(v);
+            } else
+            if (typeof from[name] === 'object') {
+                if (typeof dest[name] !== 'object') {
+                    dest[name] = {}
+                }
+                dest[name] = _clone_(from[name]);
+                //_fullExtend(dest[name],from[name]);
+            } else {
+                destination = Object.getOwnPropertyDescriptor(from, name);
+                Object.defineProperty(dest, name, destination);
+            }
+        });
+        return dest;
+    },
+    
+    
     safeCallback: function safeCallback(callback, val1, val2) {
         if (njs.iscb(callback)) {
             callback(val1, val2);
@@ -226,7 +251,7 @@ var njs = {
         doit(-1);
     },
 
-    dcs: function (deviceName, channelName, stateName) {
+    dcs_old: function (deviceName, channelName, stateName) {
         if (stateName === undefined) {
             stateName = channelName;
             channelName = '';
@@ -234,16 +259,59 @@ var njs = {
         if (stateName[0] === '.') {
             return stateName.substr(1);
         }
+        
         var ret = '';
-        var ar = [deviceName, channelName, stateName];
-        for (var i = 0; i < ar.length; i++) {
-            var s = ar[i];
-            if (!ret) ret = s;
-            else if (s) ret += '.' + s;
-        }
+        [deviceName, channelName, stateName].forEach(function(v) {
+            if (v) {
+                if (!ret) ret = v;
+                else ret += '.' + v;
+            }
+        });
+        
+        // var ar = [deviceName, channelName, stateName];
+        // for (var i = 0; i < ar.length; i++) {//[deviceName, channelName, stateName]) {
+        //     var s = ar[i];
+        //     if (!ret) ret = s;
+        //     else if (s) ret += '.' + s;
+        // }
         return ret;
     },
-
+    
+    
+    reDotTest: /^\./,
+    reRemoveDupDots: /\.+/g,
+    validatedId: function (id) {
+        return id.replace(reRemoveDupDots, '.').replace(/^\./, '').replace(/\.$/, '');
+    },
+    //validateId: njs.validatedId,
+    dcs1: function (deviceName, channelName, stateName) {
+        if (channelName === undefined) {
+            stateName = deviceName;
+            deviceName = '';
+        } else if (stateName === undefined) {
+            stateName = channelName;
+            channelName = '';
+        }
+        if (stateName[0] === '.') return njs.validatedId(stateName);
+        if (channelName) deviceName += '.' + channelName;
+        if (stateName) deviceName += '.' + stateName;
+        return njs.validatedId(deviceName);
+    },
+    dcs: function (deviceName, channelName, stateName) {
+        var argCnt = arguments.length;
+        if (!argCnt) return '';
+        if (arguments[argCnt-1] [0] === '.') return njs.validatedId(arguments[argCnt-1]);
+        var id = '';
+        for (var i=0; i<argCnt; i++) {
+            if (arguments[i]) {
+                if (!id) id = arguments[i];
+                else id += '.' + arguments[i];
+            }
+        }
+        return njs.validatedId(id);
+    },
+    
+    
     pattern2RegEx: function (pattern) {
         if (pattern != '*') {
             if (pattern[0] == '*' && pattern[pattern.length - 1] != '*') pattern += '$';
@@ -387,6 +455,7 @@ var njs = {
     }
 
 };
+njs.validateId = njs.validatedId;
 
 for (var i in njs) {
     global[i] = njs[i];
@@ -431,7 +500,7 @@ function setState(id, val, ack) {
 function setObjectNotExists(id, newObj, callback) {
     getObject(id, {}, function (err, o) {
         if (!o) {
-            setObject(id, newObj, {}, callback)
+            setObject(id, newObj, {}, callback);
             return;
         }
         safeCallback(callback, "exists", o);
@@ -526,6 +595,7 @@ function Devices (_adapter, _callback) {
 
         if (obj['val'] !== undefined) {
             newobj.common.type = typeof obj.val;
+            if (typeof obj.val === 'number' && (newobj.common.role === undefined || newobj.common.role === 'state')) newobj.common.role = 'level';
             val = obj.val;
             delete newobj.val;
         }
@@ -723,7 +793,7 @@ function Devices (_adapter, _callback) {
         var deviceName = '', channelName = '';
         var self = this;
         this.list = (list === undefined) ? that.list : list;
-
+    
         function push (obj) {
             for (var i=0; i<self.list.length; i++) {
                 if (self.list[i]._id === obj._id) {
@@ -761,7 +831,8 @@ function Devices (_adapter, _callback) {
             else {
                 channelName = name;
                 var id = dcs(deviceName, channelName);
-                if (!that.has(id)) {
+                //if (!that.has(id)) {
+                if (id && !that.has(id)) { // don't create channels without id
                     if (typeof showNameOrObject == 'object') {
                         var obj = {type: 'channel', _id: id, common: {name: name} };
                         if (showNameOrObject.common) obj.common = showNameOrObject.common;
@@ -778,7 +849,8 @@ function Devices (_adapter, _callback) {
             else {
                 channelName = normalizedName(name);
                 var id = dcs(deviceName, channelName);
-                if (!that.has(id)) {
+                //if (!that.has(id)) {
+                if (id && !that.has(id)) { // don't create channels without id
                     if (typeof showNameOrObject == 'object') {
                         var obj = {type: 'channel', _id: id, common: {name: name} };
                         if (showNameOrObject.common) obj.common = showNameOrObject.common;
@@ -791,7 +863,7 @@ function Devices (_adapter, _callback) {
             }
         };
 
-        function split(id, valOrObj, showName) {
+        function split_old (id, valOrObj, showName) {
             var ar = ((id && id[0] == '.') ? id.substr(1) : dcs(deviceName, channelName, id)).split('.');
             var dName = deviceName, cName = channelName;
             switch(ar.length) {
@@ -806,8 +878,33 @@ function Devices (_adapter, _callback) {
                     return ret;
             }
         }
+    
+        function split (id, valOrObj, showName) {
+            var ar = ((id && id[0] == '.') ? id.substr(1) : dcs(deviceName, channelName, id)).split('.');
+            var dName = deviceName, cName = channelName;
+            deviceName = channelName = '';
+            exports.arrayRemoveEmptyEntries(ar);
+            if (!ar.length) return;
+            id = ar.pop();
+    
+            if (ar.length) deviceName = ar.shift();
+            if (ar.length) channelName = ar.join('.');
+            
+            var ret = add (id, valOrObj, showName);
+            
+            deviceName = dName;
+            channelName = cName;
+            return ret;
+        }
 
-        function add (name, valOrObj, showName) {
+        this.__testSplit = function (id, valOrObj, showName) {
+            return split(id, valOrObj, showName);
+        };
+        this.__testSplit__Old = function (id, valOrObj, showName) {
+            return split_old(id, valOrObj, showName);
+        };
+        
+        function add_old (name, valOrObj, showName) {
             //if (valOrObj === null) return;
             if (valOrObj == null) return;
             if (name.indexOf('.') >= 0) {
@@ -819,6 +916,14 @@ function Devices (_adapter, _callback) {
             return push(obj);
         }
 
+        function add (name, valOrObj, showName) {
+            if (valOrObj == null) return;
+            var obj = val2obj(valOrObj, showName || name);
+            obj._id = dcs(deviceName, channelName, name);
+            obj.type = 'state';
+            return push(obj);
+        }
+		
         function __setVal(_id, newObj) {
             var val = newObj['val'] !== undefined ? newObj.val : newObj;
             if (objects[_id].val !== val) {
@@ -838,6 +943,7 @@ function Devices (_adapter, _callback) {
             return this.set('.' + id, newObj, showName);
         };
 
+        this.add =
         this.set = function (id, newObj, showName) {
             if (newObj == undefined) return;
             var _id = dcs(deviceName, channelName, id);
@@ -857,6 +963,12 @@ function Devices (_adapter, _callback) {
             }
             return this.set(id, newObj, showName);
         };
+        // this.setex = function (id, newObj, showName) {
+        //     if (adapter) {
+        //         id = exports.ns.no(id);
+        //     }
+        //     return this.set(id, newObj, showName);
+        // };
 
         this.getobjex = function (id) {
             var id = dcs(deviceName, channelName, id);
@@ -872,11 +984,11 @@ function Devices (_adapter, _callback) {
             this._getobjex(id).val = val;
         };
         this.setName = function (name) {
-            var id = dcs(deviceName, channelName, '');
+            //var id = dcs(deviceName, channelName, '');
+            var id = dcs(deviceName, channelName);
             that.setObjectName(id, name);
         };
 
-        this.add = this.set;
         this.getFullId = function (id) {
             return dcs(deviceName, channelName, id);
         };
@@ -952,7 +1064,7 @@ var CNamespace = function (_adapter) {
     this.is = isre.test.bind(isre); //.bind(this);
     this.add = function add (s) {
         return s.replace(re, _adapter.namespace + '.')
-    }
+    };
     this.add2 = function add (s) {
         return s.replace(re, _adapter.namespace + (s ? '.' : ''));
     }
@@ -1163,7 +1275,7 @@ exports.changeAdapterConfig = changeAdapterConfig;
 exports.changeConfig = function changeConfig(changeCallback, doneCallback) {
     if (!adapter) return false;
     return changeAdapterConfig(adapter, changeCallback, doneCallback)
-}
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1191,7 +1303,7 @@ exports.TimeDiff = function () {
 
     this.start = process.hrtime();
     return this;
-}
+};
 
 
 exports.bufferIndexOf = function (buffer, search, offset, encoding){
@@ -1233,7 +1345,7 @@ exports.bufferIndexOf = function (buffer, search, offset, encoding){
         }
     }
     return -1;
-}
+};
 
 exports.bufferSplit = function (buffer, delimiter) {
     var ar = [];
@@ -1248,7 +1360,7 @@ exports.bufferSplit = function (buffer, delimiter) {
         ar.push(buffer.slice(start, buffer.length));
     }
     return ar;
-}
+};
 
 exports.bufferCat = function (buffer, chunk) {
     if (!chunk.length) return buffer;
@@ -1259,15 +1371,18 @@ exports.bufferCat = function (buffer, chunk) {
         return newBuffer;
     }
     return chunk;
-}
+};
 
 exports.Timer = function Timer (func, timeout, v1) {
     if (!(this instanceof Timer)) {
         return new Timer(func, timeout, v1);
     }
     var timer = null;
+    this.inhibit = false;
+    this.enable = function (bo) { this.inhibit = (bo === false); };
     this.set = function (func, timeout, v1) {
         if (timer) clearTimeout(timer);
+        if (this.inhibit) return;
         timer = setTimeout(function() {
             timer = null;
             func(v1);
@@ -1280,11 +1395,17 @@ exports.Timer = function Timer (func, timeout, v1) {
             return true;
         }
         return false;
-    }
+    };
+    this.clearAndInhibit = function () {
+        this.inhibit = true;
+        this.clear();
+    };
+    
     if (func) {
         this.set(func, timeout, v1);
     }
 };
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1365,7 +1486,7 @@ function forEachObjectChild2(id, options, readyCallback, callback) {
         forEachInSystemObjectView('channel', id, doStates, callback);
     }
     forEachInSystemObjectView('device', id, doChannels, callback);
-};
+}
 
 
 njs.dcs.del = delObjectWithStates;
@@ -1382,7 +1503,7 @@ function delObjectWithStates (id, options, callback) {
             devices.remove(idWithoutNamespace(o.id));
         });
     });
-};
+}
 
 
 njs.dcs.delall = function (callback) {
@@ -1413,7 +1534,7 @@ exports.arrayToHex = arrayToHex;
 
 function extendArray () {
     require('array-ext');
-};
+}
 exports.extendArray = extendArray;
 
 function extendNumber() {
@@ -1456,7 +1577,7 @@ exports.deleteOrphanedDevices = function (propName, _validArr, cb) {
             dcs.del(id, next);
         }, cb);
     });
-}
+};
 
 var _fs;
 exports.existFile = function (fn) {
@@ -1467,7 +1588,7 @@ exports.existFile = function (fn) {
     } catch(e) {
     }
     return false;
-}
+};
 exports.existDirectory = function (path) {
     try {
         _fs = _fs || require('fs');
@@ -1476,7 +1597,7 @@ exports.existDirectory = function (path) {
     } catch(e) {
     }
     return false;
-}
+};
 exports.isWin = process.platform === 'win32';
 
 
@@ -1484,7 +1605,7 @@ exports.isWin = process.platform === 'win32';
 
 var log = function (fmt, args) {
     adapter.log.info(exports.sprintf.apply (null, arguments));
-}
+};
     
 log.error = function(fmt, args) { adapter.log.error(exports.sprintf.apply (null, arguments)); },
 log.info =  function(fmt, args) { adapter.log.info(exports.sprintf.apply (null, arguments)); },
@@ -1495,18 +1616,19 @@ log.debug = function(fmt, args) {
     }
     log.debug = function(fmt, args) {
         adapter.log.debug(exports.sprintf.apply (null, arguments));
-    }
+    };
     adapter.log.debug(exports.sprintf.apply (null, arguments));
-}
-log.warn  = function(fmt, args) { adapter.log.warn(exports.sprintf.apply (null, arguments)); }
+};
+log.warn  = function(fmt, args) { adapter.log.warn(exports.sprintf.apply (null, arguments)); };
 
 exports.log = log;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 var xmlParser, http;
-                                                        
-function getHttpData(url, options, cb) {
+
+var getHttpData =
+exports.getHttpData = function (url, options, cb) {
     if (!http) try { http = require('http'); } catch(e) { return cb && cb(-1) };
     if (cb == undefined) {
         cb = options;
@@ -1534,7 +1656,7 @@ function getHttpData(url, options, cb) {
                     xmlParser = -1;
                     return cb && cb (-1);
                 }
-            
+                
                 xmlParser.parseString(data, function (err, json) {
                     cb(err, json);
                 });
@@ -1548,8 +1670,60 @@ function getHttpData(url, options, cb) {
     });
     request.end();
     
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+function setPossibleStates(id, objarr, options, cb) {
+    if (!adapter) return cb && cb('adapter not set');
+	if (options === undefined) options = {};
+    if (typeof options === 'function') {
+        cb = options;
+        options = {};
+    }
+    adapter.getObject(id, function(err, obj) {
+        if (err || !obj) return;
+        if (objarr.remove || options.remove) {
+            if (obj.common.states === undefined) return cb && cb('does not exist');
+            delete obj.common.states;
+        } else {
+            if (!options.force && obj.common.states) return cb && cb('already set');
+            obj.common.states = {};
+            if (Array.isArray(objarr)) {
+                objarr.forEach(function (v) {
+                    obj.common.states[v] = v;
+                });
+            } else {
+                obj.common.states = objarr;
+            }
+        }
+        if (options.removeNativeValues && obj.native) delete obj.native.values;
+        adapter.setObject(id, obj, function(err, _obj) {
+            cb && cb(err, obj);
+        });
+    })
 }
-exports.getHttpData = getHttpData;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+exports.arrayRemoveEE = function (ar) {
+    for (var i=ar.length-1; i>=0; i--) {
+        if (!ar[i]) ar.splice(i,1);
+    }
+};
+exports.arrayRemoveEmptyEntries = exports.arrayRemoveEE;
+
+exports.arrayJoinWithoutEmptyEntries = function (ar, sep) {
+    var ret = '';
+    ar.forEach(function (v) {
+        if (v) {
+            if (!ret) ret = v;
+            else ret += sep + v;
+        }
+    });
+    return ret;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1562,7 +1736,18 @@ try {
     exports.sprintf = _sprintf.sprintf;
     exports.vsprintf = _sprintf.vsprintf;
 } catch(e) {
-    exports.sprintf = function(fs) { return 'sprintf-js not loaded ' + fs}
+    exports.sprintf = function(fs) { return 'sprintf-js not loaded ' + fs};
     exports.vsprintf = exports.sprintf
 }
+
+/*
+Object.defineProperty(O.prototype, 'b', {
+    get: function() {
+        return this.a;
+    },
+    set: function(val) {
+        this.a = val;
+    }
+});
+*/
 

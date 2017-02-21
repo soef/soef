@@ -5,7 +5,7 @@ var log = {
     debug: console.log,
     info: console.log,
     eror: console.log
-}
+};
 
 var Adapter = function(options) {
     
@@ -77,7 +77,7 @@ var Adapter = function(options) {
                 return cb(-1, 0);
         }
         cb(0, {});
-    }
+    };
     this.objects = {};
     this.objects.getObject = this.getObject;
     
@@ -192,6 +192,133 @@ describe('Test soef', function() {
         expect(ns.is('state')).to.equal(false);
         done();
     });
+ 
+    it('dcs', function(done) {
+        expect(soef.njs.dcs('', '', '')).to.equal('');
+        expect(soef.njs.dcs('1', '', '')).to.equal('1');
+        expect(soef.njs.dcs('1', '2', '')).to.equal('1.2');
+        expect(soef.njs.dcs('1', '2', '3')).to.equal('1.2.3');
+        expect(soef.njs.dcs('1.', '.2..', '')).to.equal('1.2');
+        expect(soef.njs.dcs('1', '2')).to.equal('1.2');
+    
+        expect(soef.njs.dcs('1.', '2..', '..3')).to.equal('3');
+        expect(soef.njs.dcs('1.', '2..', '.3')).to.equal('3');
+        expect(soef.njs.dcs('1.', '2..', '.3..')).to.equal('3');
+        expect(soef.njs.dcs('1.', '2..', '..3..')).to.equal('3');
+        expect(soef.njs.dcs('..1.', '2..', '3')).to.equal('1.2.3');
+        expect(soef.njs.dcs('.1.', '2..', '3..')).to.equal('1.2.3');
+        expect(soef.njs.dcs('1.', '2..', '3..')).to.equal('1.2.3');
+        
+        expect(soef.njs.dcs('.', '.', '.')).to.equal('');
+    
+        expect(soef.njs.dcs('1', '2', '.a.b')).to.equal('a.b');
+        expect(soef.njs.dcs('1', '', '.a.b')).to.equal('a.b');
+        expect(soef.njs.dcs('1', '.a.b')).to.equal('a.b');
+        
+        expect(soef.njs.dcs('1', '2.', '3.4')).to.equal('1.2.3.4');
+
+        done();
+    });
+    
+    it('CDvice.split', function(done) {
+        var devices = new soef.Devices();
+        var dev = new devices.CDevice();
+    
+        var terms = [
+            { d: '', c: '', s: '.1.2', result: '1.2'},
+            { d: 'd', c: 'c', s: '.1.2', result: '1.2', o: false },
+            { d: 'd', c: 'c', s: '1.2', result: 'd.c.1.2', o: false},
+        ];
+        terms.forEach(function(v,i) {
+            dev.setDevice('');
+            dev.setChannelEx();
+            if (v.d !== undefined) dev.setDevice(v.d);
+            if (v.c !== undefined) dev.setChannel(v.c);
+            var n = dev.__testSplit(v.s, 'valOrObj', 'showName');
+            var o = dev.__testSplit__Old(v.s, 'valOrObj', 'showName');
+            if (v.o === undefined) expect(n).to.equal(o);
+            expect(n._id).to.equal(v.result);
+        });
+        done();
+    });
+    
+    it('CDvice.add', function(done) {
+        var devices = new soef.Devices();
+        var dev = new devices.CDevice();
+        
+        var terms = [
+            { d: '', c: '', s: '.1.2', val: 1, result: '1.2'},
+            { d: 'd', c: 'c', s: '.1.2', val: true, result: '1.2', o: false },
+            { d: 'd', c: 'c', s: '1.2', val: '', result: 'd.c.1.2', o: false},
+            //{ d: '', c: '', s: '1.2' },
+            //{ d: '', c: '', s: '1.2' },
+        ];
+        terms.forEach(function(v,i) {
+            if (v.d !== undefined) dev.setDevice(v.d);
+            if (v.c !== undefined) dev.setChannel(v.c);
+            var n = dev.add(v.s, v.val, 'showName');
+            
+        });
+        var o; // = dev.list.shift();
+        o = dev.list.shift();
+        expect(o._id).to.equal(terms[0].result);
+        o = dev.list.shift();
+        expect(o._id).to.equal('d');
+        expect(o.type).to.equal('device');
+        o = dev.list.shift();
+        expect(o._id).to.equal('d.c');
+        expect(o.type).to.equal('channel');
+        o = dev.list.shift();
+        expect(o._id).to.equal(terms[2].result);
+        expect(o.type).to.equal('state');
+        done();
+    });
+    
+    it('_fullExtend', function(done) {
+        var from = { a: 'a', b: { a: 'a' }};
+        var dest = { };
+        
+        soef.njs._fullExtend (dest, from);
+    
+        expect(JSON.stringify(dest)).to.equal(JSON.stringify(from));
+        dest.b.a = 'c';
+        expect(dest.b.a).to.equal('c');
+        expect(from.b.a).to.equal('a');
+        
+        done();
+        
+    });
+    
+    it('clone', function (done) {
+        var orig = { a: 'a', o: { a: 'a'}, ar: [1,2,3] };
+        
+        var cl = soef.njs.clone(orig);
+        expect(cl).to.be.an('object');
+        expect(cl).to.eql(orig);
+        cl.o.a = 'c';
+        expect(orig.o.a).to.be.equal('a');
+        cl.ar[0] = 0;
+        expect(orig.ar[0]).to.be.equal(1);
+        done();
+    });
+    
+    it('clone 2', function (done) {
+        var ar2 = [11,22];
+        var orig = { a: 'a', o: { a: 'a'}, ar: [1,2,ar2] };
+        
+        var cl = soef.njs.clone(orig);
+        expect(cl).to.be.an('object');
+        expect(cl).to.eql(orig);
+        cl.o.a = 'c';
+        expect(orig.o.a).to.be.equal('a');
+        cl.ar[0] = 0;
+        expect(orig.ar[0]).to.be.equal(1);
+        
+        cl.ar[2][0] = 44;
+        
+        done();
+    });
+    
     
     it('Adapter', function(done) {
         var adp;
@@ -199,7 +326,7 @@ describe('Test soef', function() {
 
         function onStateChange(state) {
         	adp.test.results.onStateChange = state;
-        };
+        }
         function onUpdate(oldVersion, newVersion, cb) {
             adp.test.results.onUpdate = 'o:'+oldVersion + ',n:'+newVersion;
             cb();
@@ -213,7 +340,7 @@ describe('Test soef', function() {
             expect(adp.test.results.states ['system.adapter.soef.0.prevVersion'].val).to.equal(adp.ioPack.common.version);
 
             done();
-        };
+        }
         function adapter(options) {
             var ret = new Adapter(options);
             setTimeout(onStateChange, 100, 'stateval')
@@ -229,7 +356,7 @@ describe('Test soef', function() {
             onUpdate,
             {name: 'soef'}
         );
-    })
+    });
 	
     after('Test after', function (done) {
         this.timeout(1000);
