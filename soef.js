@@ -1496,7 +1496,7 @@ function delObjectWithStates (id, options, callback) {
         options = undefined;
     }
     //if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + '.' + id;
-    exports.ns.add(id);
+    id = exports.ns.add(id);
     delObjectAndState(id, options, function (err) {
         forEachObjectChild(id, callback, function(o, next, type) {
             delObjectAndState(o.id, options, next);
@@ -1724,6 +1724,38 @@ exports.arrayJoinWithoutEmptyEntries = function (ar, sep) {
     });
     return ret;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+exports.getNodeVersion = function () {
+    var version = 0;
+    if (process || process.version) {
+        var ar = process.version.split('.');
+        if (ar[0].indexOf('v') === 0) ar[0] = ar[0].substr(1);
+        for (var i=0; i<ar.length; i++) {
+            version *= 1000;
+            version += ~~ar[i];
+        }
+        //if (version >= 6000000) ;
+    }
+    return version;
+};
+
+exports.setAdapter = function (_adapter) {
+    var ret = adapter;
+    if (_adapter) adapter = _adapter;
+    return ret;
+};
+
+var packageJson;
+exports.getSoefVersion = exports.getOwnVersion = function () {
+    try {
+        if (!packageJson) packageJson = require('package.sjson');
+        return packageJson.version;
+    } catch(e) {
+    }
+    return undefined;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -302,23 +302,23 @@ describe('Test soef', function() {
         done();
     });
     
-    it('clone 2', function (done) {
-        var ar2 = [11,22];
-        var orig = { a: 'a', o: { a: 'a'}, ar: [1,2,ar2] };
-        
-        var cl = soef.njs.clone(orig);
-        expect(cl).to.be.an('object');
-        expect(cl).to.eql(orig);
-        cl.o.a = 'c';
-        expect(orig.o.a).to.be.equal('a');
-        cl.ar[0] = 0;
-        expect(orig.ar[0]).to.be.equal(1);
-        
-        cl.ar[2][0] = 44;
-        
-        done();
-    });
-    
+    // it('clone 2', function (done) {
+    //     var ar2 = [11,22];
+    //     var orig = { a: 'a', o: { a: 'a'}, ar: [1,2,ar2] };
+    //
+    //     var cl = soef.njs.clone(orig);
+    //     expect(cl).to.be.an('object');
+    //     expect(cl).to.eql(orig);
+    //     cl.o.a = 'c';
+    //     expect(orig.o.a).to.be.equal('a');
+    //     cl.ar[0] = 0;
+    //     expect(orig.ar[0]).to.be.equal(1);
+    //
+    //     cl.ar[2][0] = 44;
+    //
+    //     done();
+    // });
+    //
     
     it('Adapter', function(done) {
         var adp;
