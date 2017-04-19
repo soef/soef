@@ -7,6 +7,7 @@
 
 "use strict";
 
+var soef = exports;
 
 if (!Object.assign) {
     Object.prototype.assign = function (target) {
@@ -611,15 +612,42 @@ function Devices (_adapter, _callback) {
         });
     };
 
-    this.setState = function (id, val, ack) {
+    this._setState = function (id, val, ack) {
         if (val !== undefined) objects[id].val = val;
         else val = objects[id].val;
-        //ack = ack || true;
 		if (ack === undefined) ack=true;
         setState(id, val, ack);
     };
+    
+    this.setState = function (o, id, val, ack) {
+        var device = '', channel = '', state = id, changed;
+        if (typeof o === 'object') {
+            id = undefined;
+            for (var n in o) switch (n[0]) {
+                case 'i': id = soef.ns.no(o[n]); break;
+                case 'v': val = o[n]; break;
+                case 'd': device = o[n]; break;
+                case 'c': channel = o[n]; break;
+                case 's': state = o[n]; break;
+                case 'a': ack = o[n]; break;
+            }
+            if (id === undefined) id = dcs (normalizedName (device), normalizedName (channel), state);
+        } else {
+            ack = val;
+            val = id;
+            id = soef.ns.no(o);
+        }
+        if (val !== undefined) {
+            changed = (objects[id].val !== val);
+            objects[id].val = val;
+        }
+        else val = objects[id].val;
+        if (ack === undefined) ack=true;
+        setState(id, val, ack);
+        return changed;
+    };
 
-    this.setStateEx = function (id, newObj, ack, callback) {
+    this.xsetStateEx = function (id, newObj, ack, callback) {
         if (typeof ack === 'function') {
             callback = ack;
             ack = true
@@ -637,6 +665,44 @@ function Devices (_adapter, _callback) {
             safeCallback(callback, 0);
         }
     };
+
+    this.setStateEx = function (id, newObj, ack, callback) {
+        if (typeof ack === 'function') {
+            callback = ack;
+            ack = true
+        }
+        if (typeof newObj !== 'object') {
+            newObj = { val: newObj };
+        }
+        if (ack === undefined) ack = true;
+        if (!that.has(id)) {
+            that.createObjectNotExists(id, newObj, callback);
+        } else {
+            var oldObj = objects[id];
+            if (oldObj.val !== newObj.val) {
+                that.setState(id, newObj.val, ack);
+            }
+            if (exports._extendObject_) {
+                var nO;
+                if (newObj.native && newObj.native !== oldObj.native) {
+                    nO = { native: newObj.native };
+                };
+                if (newObj.common && newObj.common.name && (!oldObj.common || newObj.common.name !== oldObj.common.name)) {
+                    no = no || {};
+                    nO.common = newObj.common;
+                }
+                if (nO) {
+                    Object.assign (oldObj, nO);
+                    adapter.extendObject(id, nO, callback);
+                } else {
+                    safeCallback(callback, 0);
+                }
+            } else {
+                safeCallback(callback, 0);
+            }
+        }
+    };
+
 
     function val2obj(valOrObj, showName) {
         //if (valOrObj === null) return;
@@ -1012,6 +1078,7 @@ function Devices (_adapter, _callback) {
 
         this.clear = function(id) {
             id = exports.ns.no (id);
+            Object.assign(dcs, exports.ns);
             var st = that.getobjex(id);
             if (st === undefined) return;
             switch(typeof st.val) {
@@ -1639,6 +1706,7 @@ exports.getHttpData = function (url, options, cb) {
     
     var request = http.get(url, function(response) {
         var data = '';
+        //response.setEncoding('utf8');
         response.on('data', function(d) {
             data += d;
         });
@@ -1669,6 +1737,11 @@ exports.getHttpData = function (url, options, cb) {
         console.error(e);
     });
     request.end();
+    // request.setTimeout(timeout, function () {
+    //     this.abort();
+    //     cb && cb ('timeout', null, link);
+    //     cb = null;
+    // });
     
 };
 
@@ -1762,6 +1835,8 @@ exports.getSoefVersion = exports.getOwnVersion = function () {
 exports.Devices = Devices;
 exports.njs = njs;
 exports.extendGlobalNamespace = extendGlobalNamespace;
+exports._extendObject_ = false;
+
 
 try {
     var _sprintf = require('sprintf-js');
