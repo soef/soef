@@ -1673,10 +1673,10 @@ exports.isDirectory = exports.existDirectory = function (path) {
 
 exports.readdirSync = function (fn, defaultReturnValue) {
     try {
-        let list = fs.readdirSync (fn);
+        var list = fs.readdirSync (fn);
         if (list) {
             list.sort();
-            let idx = list.indexOf('__DB__');
+            var idx = list.indexOf('__DB__');
             if (idx >= 0) list.splice(idx, 1);
             return list;
         }
