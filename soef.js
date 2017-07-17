@@ -1272,9 +1272,10 @@ exports.Adapter = function (_args) {
         ]
         for ( ; _modules.length; ) {
             try {
-                fns.adapter = require(_modules.pop()).adapter;
+                fns.adapter = require(_modules.pop()).Adapter;
                 if (fns.adapter) break;
             }   catch(e) {
+                console.log(JSON.stringify(e));
             }
         }
     }
