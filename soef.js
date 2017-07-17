@@ -1265,11 +1265,17 @@ exports.Adapter = function (_args) {
         }
     }
     if (!fns.adapter) {
-        try {
-            fns.adapter = require(__dirname + '/../../lib/utils').adapter;
-        }
-        catch(e) {
-            fns.adapter = require(__dirname + '/../iobroker.admin/lib/utils').adapter;
+        var _modules = [
+            process.mainModule.filename.replace(/lightify.js$/, '') + 'lib/utils',
+            __dirname + '/../iobroker.admin/lib/utils',
+            __dirname + '/../../lib/utilsx'
+        ]
+        for ( ; _modules.length; ) {
+            try {
+                fns.adapter = require(_modules.pop()).adapter;
+                if (fns.adapter) break;
+            }   catch(e) {
+            }
         }
     }
     var options = fns.options;
