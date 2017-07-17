@@ -1268,15 +1268,16 @@ exports.Adapter = function (_args) {
         var _modules = [
             process.mainModule.filename.replace(/lightify.js$/, '') + 'lib/utils',
             __dirname + '/../iobroker.admin/lib/utils',
-            __dirname + '/../../lib/utilsx'
+            __dirname + '/../../lib/utils'
         ]
         for ( ; _modules.length; ) {
             try {
-                fns.adapter = require(_modules.pop()).Adapter;
-                if (fns.adapter) break;
+                var adpt = require(_modules.pop());
+                fns.adapter = adpt.adapter ? adpt.adapter : adpt.Adapter;
             }   catch(e) {
                 console.log(JSON.stringify(e));
             }
+            if (fns.adapter) break;
         }
     }
     var options = fns.options;
