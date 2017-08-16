@@ -1284,7 +1284,7 @@ exports.Adapter = function (_args) {
     if (!options.unload) {
         options.unload = function (callback) {
             try {
-                fns.onUnload ? onUnload(calback) : callback();
+                fns.onUnload ? fns.onUnload(calback) : callback();
             } catch (e) {
                 callback();
             }
@@ -1359,15 +1359,16 @@ exports.changeConfig = function changeConfig(changeCallback, doneCallback) {
 
 exports.TimeDiff = function () {
     if (!(this instanceof exports.TimeDiff)) return new exports.TimeDiff();
-    this.get = process.hrtime;
-    
+    var start;
+    this.get = process.hrtime.bind(process);
+
     this.getDif = function() {
         var ar = this.get();
-        var start = this.start[0] * 1e9 + this.start[1];
+        var _start = start[0] * 1e9 + start[1];
         var end = ar[0] * 1e9 + ar[1];
-        return end - start;
+        return end - _start;
     };
-    
+
     this.getMillis = function() {
         return this.getDif() / 1000000 >> 0;
     };
@@ -1375,12 +1376,12 @@ exports.TimeDiff = function () {
         return this.getDif() / 1000 >> 0;
     };
     this.start = function () {
-        this.start = this.get();
+        start = this.get();
     };
-    
-    this.start = process.hrtime();
-    return this;
-};
+
+    start = process.hrtime();
+    //return this;
+}
 
 
 exports.bufferIndexOf = function (buffer, search, offset, encoding){
