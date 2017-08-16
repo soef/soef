@@ -1284,7 +1284,7 @@ exports.Adapter = function (_args) {
     if (!options.unload) {
         options.unload = function (callback) {
             try {
-                fns.onUnload ? fns.onUnload(calback) : callback();
+                fns.onUnload ? fns.onUnload(callback) : callback();
             } catch (e) {
                 callback();
             }
