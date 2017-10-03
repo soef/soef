@@ -1,8 +1,8 @@
 /**
- 
+
  Copyright (c) 2016 - 2017 soef <soef@gmx.net>
  All rights reserved.
- 
+
  **/
 
 "use strict";
@@ -106,21 +106,21 @@ exports.getFnProp = function(root, path, log) {
 ////////////////////////////////////////////////////////////////////////////////////
 
 var njs = {
-    
+
     pasProp: hasProp,
     iscb: function (cb) {
         return typeof cb === 'function';
     },
-    
+
     bind: function(func, that) {
         return function() {
             return func.apply(that, arguments);
         };
     },
-    
+
     _fullExtend: function (dest, from) {
         var props = Object.getOwnPropertyNames(from), destination;
-        
+
         props.forEach(function (name) {
             if (typeof from[name] === 'object') {
                 if (typeof dest[name] !== 'object') {
@@ -137,10 +137,10 @@ var njs = {
         _fullExtend(dest, from);
         return dest;
     },
-    
+
     clone_old: function (from) {
         var props = Object.getOwnPropertyNames(from), destination, dest = {};
-        
+
         props.forEach(function (name) {
             if (from[name] instanceof Array) {
                 //dest[name] = new Array(from[name]);
@@ -158,10 +158,10 @@ var njs = {
         });
         return dest;
     },
-    
+
     clone: function _clone_ (from) {
         var props = Object.getOwnPropertyNames(from), destination, dest = {};
-        
+
         props.forEach(function (name) {
             if (from[name] instanceof Array) {
                 dest[name] = [].concat(from[name]);
@@ -181,17 +181,17 @@ var njs = {
         });
         return dest;
     },
-    
-    
+
+
     safeCallback: function safeCallback(callback, val1, val2) {
         if (njs.iscb(callback)) {
             callback(val1, val2);
         }
     },
-    
+
     forEachArrayCallback: function forEachArrayCallback (arr, readyCallback, func) {
         var cnt = -1, len = arr.length;
-        
+
         function doit() {
             if (++cnt >= len) {
                 return readyCallback && readyCallback();
@@ -200,32 +200,32 @@ var njs = {
         }
         doit();
     },
-    
+
     forEachCB: function (maxcnt, func, readyCallback) {
         var cnt = -1;
-        
+
         function doit(ret) {
             if (++cnt >= maxcnt) {
                 return njs.safeCallback(readyCallback, ret);
             }
             func(cnt, doit);
         }
-        
+
         doit(-1);
     },
     forEachSync: function (maxcnt, func, readyCallback) {
         var cnt = -1;
-        
+
         function doit(ret) {
             if (++cnt >= maxcnt) {
                 return njs.safeCallback(readyCallback, ret);
             }
             func(cnt, doit);
         }
-        
+
         doit(-1);
     },
-    
+
     forEachObjSync: function (objects, step, func, readyCallback) {
         if(typeof step === 'function') {
             readyCallback = func;
@@ -241,17 +241,17 @@ var njs = {
             objs = objects;
         }
         var pop = step == -1 ? objs.pop : objs.shift;
-        
+
         function doit(ret) {
             if (objs.length <= 0) {
                 return safeCallback(readyCallback, ret);
             }
             func(pop.call(objs), doit);
         }
-        
+
         doit(-1);
     },
-    
+
     dcs_old: function (deviceName, channelName, stateName) {
         if (stateName === undefined) {
             stateName = channelName;
@@ -260,7 +260,7 @@ var njs = {
         if (stateName[0] === '.') {
             return stateName.substr(1);
         }
-        
+
         var ret = '';
         [deviceName, channelName, stateName].forEach(function(v) {
             if (v) {
@@ -268,7 +268,7 @@ var njs = {
                 else ret += '.' + v;
             }
         });
-        
+
         // var ar = [deviceName, channelName, stateName];
         // for (var i = 0; i < ar.length; i++) {//[deviceName, channelName, stateName]) {
         //     var s = ar[i];
@@ -277,8 +277,8 @@ var njs = {
         // }
         return ret;
     },
-    
-    
+
+
     reDotTest: /^\./,
     reRemoveDupDots: /\.+/g,
     validatedId: function (id) {
@@ -311,8 +311,8 @@ var njs = {
         }
         return njs.validatedId(id);
     },
-    
-    
+
+
     pattern2RegEx: function (pattern) {
         if (pattern != '*') {
             if (pattern[0] == '*' && pattern[pattern.length - 1] != '*') pattern += '$';
@@ -322,7 +322,7 @@ var njs = {
         pattern = pattern.replace(/\*/g, '.*');
         return pattern;
     },
-    
+
     tr: {
         '\u00e4': 'ae',
         '\u00fc': 'ue',
@@ -334,7 +334,7 @@ var njs = {
         ' ': '_',
         '.': '_'
     },
-    
+
     normalizedName: function (name) {
         return name.replace(/[\u00e4\u00fc\u00f6\u00c4\u00d6\u00dc\u00df .]/g, function ($0) {
             return njs.tr[$0]
@@ -343,32 +343,32 @@ var njs = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     idWithoutNamespace: function (id, _adapter) {
         if (_adapter == undefined) _adapter = adapter;
         return id.substr(_adapter.namespace.length+1);
     },
-    
+
     removeAllObjects: function  (adapter, callback) {
-        
+
         adapter.getStates('*', function (err, states) {
             var st = [];
             for (var i in states) {
                 st.push(i);
             }
             var s = 0;
-            
+
             function dels() {
-                
+
                 if (s >= st.length) {
                     adapter.getChannels(function (err, channels) {
                         var c = 0;
-                        
+
                         function delc() {
                             if (c >= channels.length) {
                                 adapter.getDevices(function (err, devices) {
                                     var d = 0;
-                                    
+
                                     function deld() {
                                         if (d >= devices.length) {
                                             callback();
@@ -403,11 +403,11 @@ var njs = {
             dels();
         });
     },
-    
+
     REMOVE_ALL: function  (adapter, callback) {
         if (callback) callback();
     },
-    
+
     valtype: function (val) {
         switch (val) {
             //fastest way for most states
@@ -446,15 +446,15 @@ var njs = {
         if (float.toString() === val) return float;
         return val;
     },
-    
+
     formatValue: function (value, decimals, _format) {
         if (_format === undefined) _format = ".,";
         if (typeof value !== "number") value = parseFloat(value);
-        
+
         var ret = isNaN(value) ? "" : value.toFixed(decimals || 0).replace(_format[0], _format[1]).replace(/\B(?=(\d{3})+(?!\d))/g, _format[0]);
         return (ret);
     }
-    
+
 };
 njs.normalizeName = njs.normalizedName;
 njs.validateId = njs.validatedId;
@@ -512,14 +512,14 @@ function setObjectNotExists(id, newObj, callback) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function Devices (_adapter, _callback) {
-    
+
     if (!_adapter || !_adapter.adapterDir) {
         _callback = _adapter;
         _adapter = undefined;
     }
     var that = this;
     this.list = [];
-    
+
     this.setAdapter = function (_adapter) {
         adapter = _adapter;
     };
@@ -537,7 +537,7 @@ function Devices (_adapter, _callback) {
     this.setraw = function (id, obj) {
         objects[id] = obj;
     };
-    
+
     this.getobjex = function (id) {
         var obj = this.get(id);
         if (obj || !adapter || !adapter.namespace) return obj;
@@ -552,14 +552,14 @@ function Devices (_adapter, _callback) {
         if (o && o.val !== undefined) return o.val;
         return _default;
     };
-    
+
     this.invalidate = function (id) {
         this._getobjex(id).val = undefined;
     };
     this.setrawval = function (id, val) {
         this._getobjex(id).val = val;
     };
-    
+
     this.getKeys = function (pattern) {
         var r = new RegExp(pattern2RegEx(pattern));
         var result = [];
@@ -568,7 +568,7 @@ function Devices (_adapter, _callback) {
         }
         return result;
     };
-    
+
     this.foreach = function (pattern, callback) {
         var r = new RegExp(pattern2RegEx(pattern));
         for (var id in objects) {
@@ -579,7 +579,7 @@ function Devices (_adapter, _callback) {
             }
         }
     };
-    
+
     this.createObjectNotExists = function (id, obj, callback) {
         var val;
         var newobj = {
@@ -594,7 +594,7 @@ function Devices (_adapter, _callback) {
             native: { }
         };
         _fullExtend(newobj, obj);
-        
+
         if (obj['val'] !== undefined) {
             newobj.common.type = typeof obj.val;
             if (typeof obj.val === 'number' && (newobj.common.role === undefined || newobj.common.role === 'state')) newobj.common.role = 'level';
@@ -612,14 +612,14 @@ function Devices (_adapter, _callback) {
             safeCallback(callback, err, o);
         });
     };
-    
+
     this._setState = function (id, val, ack) {
         if (val !== undefined) objects[id].val = val;
         else val = objects[id].val;
         if (ack === undefined) ack=true;
         setState(id, val, ack);
     };
-    
+
     this.setState = function (o, id, val, ack) {
         var device = '', channel = '', state = id, changed;
         if (typeof o === 'object') {
@@ -647,7 +647,7 @@ function Devices (_adapter, _callback) {
         setState(id, val, ack);
         return changed;
     };
-    
+
     this.xsetStateEx = function (id, newObj, ack, callback) {
         if (typeof ack === 'function') {
             callback = ack;
@@ -666,7 +666,7 @@ function Devices (_adapter, _callback) {
             safeCallback(callback, 0);
         }
     };
-    
+
     this.setStateEx = function (id, newObj, ack, callback) {
         if (typeof ack === 'function') {
             callback = ack;
@@ -689,7 +689,7 @@ function Devices (_adapter, _callback) {
                     nO = { native: newObj.native };
                 };
                 if (newObj.common && newObj.common.name && (!oldObj.common || newObj.common.name !== oldObj.common.name)) {
-                    no = no || {};
+                    nO = nO || {};
                     nO.common = newObj.common;
                 }
                 if (nO) {
@@ -703,8 +703,8 @@ function Devices (_adapter, _callback) {
             }
         }
     };
-    
-    
+
+
     function val2obj(valOrObj, showName) {
         //if (valOrObj === null) return;
         //if (!valOrObj) return;
@@ -722,7 +722,7 @@ function Devices (_adapter, _callback) {
         }
         return obj;
     }
-    
+
     this.updateAsync = function (list, callback) {
         if (typeof list === 'function') {
             callback = list;
@@ -745,7 +745,7 @@ function Devices (_adapter, _callback) {
         }
         safeCallback(callback, 0);
     };
-    
+
     this.update = function (list, callback) {
         if (typeof list === 'function') {
             callback = list;
@@ -757,17 +757,17 @@ function Devices (_adapter, _callback) {
             //if (that.root.list) that.root.list = that.list;
             list = that.list.slice();
             that.list.length = 0;
-            
+
         }
-        if (!list || list.length == 0) return safeCallback(callback, -1);
-        
+        if (!list || list.length === 0) return safeCallback(callback, -1);
+
         forEachObjSync(list, function (obj, doit) {
                 that.setStateEx(obj._id, obj, true, doit);
             },
             callback
         );
     };
-    
+
     function _setobjname(o, name) {
         if (o['common'] === undefined) {
             o['common'] = { name: name};
@@ -775,7 +775,7 @@ function Devices (_adapter, _callback) {
             o.common['name'] = name;
         }
     }
-    
+
     this.setObjectName = function (id, name) {
         if (!objects[id] || !objects[id].common || !objects[id].common.name) {
             var o = {common: {name: ''} };
@@ -797,7 +797,7 @@ function Devices (_adapter, _callback) {
             });
         }
     };
-    
+
     this.readAllExistingObjects = function (callback) {
         adapter.getForeignStates(adapter.namespace + '.*', {}, function(err, states) {
             if (err || !states) return callback(-1);
@@ -814,7 +814,7 @@ function Devices (_adapter, _callback) {
                 }
                 that.setraw(id, { val: states[fullId] ? states[fullId].val : null});
             }
-            
+
             function setObjectProperty(obj, names, val) {
                 var dot = names.indexOf('.');
                 if (dot > 0) {
@@ -826,7 +826,7 @@ function Devices (_adapter, _callback) {
                 }
                 obj[names] = val;
             }
-            
+
             function doIt(list) {
                 for (var i = 0; i < list.length; i++) {
                     var id = list[i]._id.substr(namespacelen);
@@ -840,7 +840,7 @@ function Devices (_adapter, _callback) {
                     fullExtend(objects[id], o);
                 }
             }
-            
+
             adapter.getDevices(function (err, devices) {
                 doIt(devices);
                 adapter.getChannels('', function (err, channels) {
@@ -850,17 +850,18 @@ function Devices (_adapter, _callback) {
             });
         });
     };
-    
-    
+
+
     this.CDevice = function CDevice (_name, showName, list) {
         //if (!(this instanceof that.CDevice)) {
         //    return new that.CDevice(_name, showName, list);
         //}
-        
+
         var deviceName = '', channelName = '';
         var self = this;
         this.list = (list === undefined) ? that.list : list;
-        
+        this.force = false;
+
         function push (obj) {
             for (var i=0; i<self.list.length; i++) {
                 if (self.list[i]._id === obj._id) {
@@ -870,7 +871,7 @@ function Devices (_adapter, _callback) {
             self.list.push(obj);
             return obj;
         }
-        
+
         this.setDevice = function (name, options) {
             channelName = "";
             if (!name) return;
@@ -882,7 +883,7 @@ function Devices (_adapter, _callback) {
             return push(obj);
         };
         this.setDevice(_name, showName && typeof showName == 'string' ? {common: {name: showName}} : showName);
-        
+
         this.setObjectName = function (id, showName) {
             for (var i=0; i<self.list.length; i++) {
                 if (self.list[i]._id == id) {
@@ -892,7 +893,7 @@ function Devices (_adapter, _callback) {
             }
             return -1;
         };
-        
+
         this.setChannel = function (name, showNameOrObject) {
             if (name === undefined) channelName = "";
             else {
@@ -929,7 +930,7 @@ function Devices (_adapter, _callback) {
                 }
             }
         };
-        
+
         function split_old (id, valOrObj, showName) {
             var ar = ((id && id[0] == '.') ? id.substr(1) : dcs(deviceName, channelName, id)).split('.');
             var dName = deviceName, cName = channelName;
@@ -945,7 +946,7 @@ function Devices (_adapter, _callback) {
                     return ret;
             }
         }
-        
+
         function split (id, valOrObj, showName) {
             var ar = ((id && id[0] == '.') ? id.substr(1) : dcs(deviceName, channelName, id)).split('.');
             var dName = deviceName, cName = channelName;
@@ -953,24 +954,24 @@ function Devices (_adapter, _callback) {
             exports.arrayRemoveEmptyEntries(ar);
             if (!ar.length) return;
             id = ar.pop();
-            
+
             if (ar.length) deviceName = ar.shift();
             if (ar.length) channelName = ar.join('.');
-            
+
             var ret = add (id, valOrObj, showName);
-            
+
             deviceName = dName;
             channelName = cName;
             return ret;
         }
-        
+
         this.__testSplit = function (id, valOrObj, showName) {
             return split(id, valOrObj, showName);
         };
         this.__testSplit__Old = function (id, valOrObj, showName) {
             return split_old(id, valOrObj, showName);
         };
-        
+
         function add_old (name, valOrObj, showName) {
             //if (valOrObj === null) return;
             if (valOrObj == null) return;
@@ -982,7 +983,7 @@ function Devices (_adapter, _callback) {
             obj.type = 'state';
             return push(obj);
         }
-        
+
         function add (name, valOrObj, showName) {
             if (valOrObj == null) return;
             var obj = val2obj(valOrObj, showName || name);
@@ -990,14 +991,14 @@ function Devices (_adapter, _callback) {
             obj.type = 'state';
             return push(obj);
         }
-        
+
         function __setVal(_id, newObj) {
             var val = newObj['val'] !== undefined ? newObj.val : newObj;
             if (objects[_id].val !== val) {
                 that.setState(_id, val, true);
             }
         }
-        
+
         this.dset = function(d,s,v,showName) {
             var _id = dcs(d, '', s);
             if (!objects[_id]) {
@@ -1005,11 +1006,11 @@ function Devices (_adapter, _callback) {
             }
             __setVal(_id, v);
         };
-        
+
         this.rset = function (id, newObj, showName) {
             return this.set('.' + id, newObj, showName);
         };
-        
+
         this.add =
             this.set = function (id, newObj, showName) {
                 if (newObj == undefined) return;
@@ -1018,14 +1019,14 @@ function Devices (_adapter, _callback) {
                     return add (id, newObj, showName);
                 }
                 var val = newObj['val'] !== undefined ? newObj.val : newObj;
-                if (objects[_id].val !== val) {
+                if (this.force || objects[_id].val !== val) {
                     that.setState(_id, val, true);
                     return true;
                 }
                 return false; //objects[_id];
             };
         this.setex = function (id, newObj, showName) {
-            if (adapter && id.substr(0, adapter.namespace.length) == adapter.namespace) {
+            if (adapter && id.substr(0, adapter.namespace.length) === adapter.namespace) {
                 id = id.substr(adapter.namespace.length+1);
             }
             return this.set(id, newObj, showName);
@@ -1036,7 +1037,7 @@ function Devices (_adapter, _callback) {
         //     }
         //     return this.set(id, newObj, showName);
         // };
-        
+
         this.getobjex = function (id) {
             var id = dcs(deviceName, channelName, id);
             return that.getobjex(id);
@@ -1055,7 +1056,7 @@ function Devices (_adapter, _callback) {
             var id = dcs(deviceName, channelName);
             that.setObjectName(id, name);
         };
-        
+
         this.getFullId = function (id) {
             return dcs(deviceName, channelName, id);
         };
@@ -1076,7 +1077,7 @@ function Devices (_adapter, _callback) {
             this.update();
         };
         this.setImmediately = this.setAndUpdate;
-        
+
         this.clear = function(id) {
             id = exports.ns.no (id);
             Object.assign(dcs, exports.ns);
@@ -1090,7 +1091,7 @@ function Devices (_adapter, _callback) {
             }
             this.setAndUpdate(id, st);
         };
-        
+
         this.update = function (callback) {
             if (this.list.length > 0) {
                 that.update(this.list, callback);
@@ -1098,9 +1099,9 @@ function Devices (_adapter, _callback) {
                 safeCallback(callback);
             }
         };
-        
+
     };
-    
+
     this.CState = this.CDevice;
     this.root = new this.CDevice('');
     this.init = function (_adapter, callback) {
@@ -1108,11 +1109,11 @@ function Devices (_adapter, _callback) {
         exports.ns = CNamespace(_adapter);
         this.readAllExistingObjects(callback);
     };
-    
+
     if (_adapter) {
         this.init(_adapter, _callback);
     }
-    
+
     return this;
 }
 
@@ -1122,7 +1123,7 @@ var CNamespace = function (_adapter) {
     if (!(this instanceof CNamespace)) {
         return new CNamespace(_adapter);
     }
-    
+
     var re = new RegExp('^' + _adapter.namespace + '.|^'); //  new/^adapter.0.|^/, '')
     var isre = new RegExp('^' + _adapter.namespace);
     this.no = function no (s) {
@@ -1158,11 +1159,11 @@ function savePrevVersion() {
     if(!hasProp(adapter, 'ioPack.common.version')) return;
     var id = 'system.adapter.' + adapter.namespace;
     var vid = id + '.prevVersion';
-    
+
     function set() {
         adapter.states.setState(vid, { val: adapter.ioPack.common.version, ack: true, from: id });
     }
-    
+
     adapter.objects.getObject(vid, function(err, obj) {
         if (err || !obj) {
             adapter.objects.setObject(vid, {
@@ -1214,13 +1215,13 @@ function switchToDebug(force) {
 exports.switchToDebug = switchToDebug;
 
 function _main (_adapter, options, callback ) {
-    
+
     if (!_adapter || !_adapter.adapterDir) {
         options = _adapter;
         callback = options;
         _adapter = adapter;
     }
-    
+
     if (typeof options == 'function') {
         callback = options;
         options = {};
@@ -1232,13 +1233,13 @@ function _main (_adapter, options, callback ) {
         _devices = new Devices();
         global.devices = _devices;
     }
-    
+
     if (!options.doNotExportAdapter) {
         module.parent.exports = {
             adapter: _adapter
         };
     }
-    
+
     switchToDebug();
     _devices.init(_adapter, function(err) {
         callback();
@@ -1293,8 +1294,8 @@ exports.Adapter = function (_args) {
     if (!options.stateChange && fns.onStateChange) {
         options.stateChange = function (id, state) {
             if (state && !state.ack) {
-                
-                
+
+
                 ///!!/////xxxxxxxxxxx//////////////////////////////////////
                 //var _id = id.substr(fns.adapter.namespace.length+1);
                 //_id = id.slice(fns.adapter.namespace.length+1);
@@ -1302,7 +1303,7 @@ exports.Adapter = function (_args) {
                 //    global.devices.setrawval(_id, state.val);
                 //}
                 /////////////////////////////////////////////////////////
-                
+
                 fns.onStateChange(id, state);
             }
         };
@@ -1386,7 +1387,7 @@ exports.TimeDiff = function () {
 
 exports.bufferIndexOf = function (buffer, search, offset, encoding){
     if (!Buffer.isBuffer(buffer)) return -1;
-    
+
     if (typeof offset === 'string') {
         encoding = offset;
         offset = 0;
@@ -1403,17 +1404,17 @@ exports.bufferIndexOf = function (buffer, search, offset, encoding){
             if (Buffer.isBuffer(search)) break;
             return -1;
     }
-    
+
     var blen = buffer.length,
         slen = search.length;
     if (slen === 0) return -1;
-    
+
     if (!offset || typeof offset != 'number') offset = 0;
     else if (offset < 0) offset = buffer.length + offset;
     if (offset < 0) offset = 0;
-    
+
     for (var i=offset; i < blen; i++) {
-        
+
         if(buffer[i] != search[0]) continue;
         for (var j=1; j<slen && i+j<blen; j++) {
             if(buffer[i+j] != search[j]) break;
@@ -1427,7 +1428,7 @@ exports.bufferIndexOf = function (buffer, search, offset, encoding){
 
 exports.bufferSplit = function (buffer, delimiter) {
     var ar = [];
-    
+
     for (var start= 0, idx=0; start<buffer.length; ) {
         idx = bufferIndexOf(buffer, delimiter, start);
         if (idx < 0) break;
@@ -1478,7 +1479,7 @@ exports.Timer = function Timer (func, timeout, v1) {
         this.inhibit = true;
         this.clear();
     };
-    
+
     if (func) {
         this.set(func, timeout, v1);
     }
@@ -1526,9 +1527,9 @@ function forEachObjectChild(id, options, readyCallback, callback) {
         callback = readyCallback;
         readyCallback = null;
     }
-    
+
     if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + (id ? '.' + id : '');
-    
+
     function doChannels() {
         forEachInSystemObjectView('channel', id, readyCallback, callback);
     }
@@ -1554,9 +1555,9 @@ function forEachObjectChild2(id, options, readyCallback, callback) {
         callback = readyCallback;
         readyCallback = null;
     }
-    
+
     if (!adapter._namespaceRegExp.test(id)) id = adapter.namespace + (id ? '.' + id : '');
-    
+
     function doStates() {
         forEachInSystemObjectView('state', id, readyCallback, callback);
     }
@@ -1635,15 +1636,15 @@ exports.deleteOrphanedDevices = function (propName, _validArr, cb) {
         _validArr = propName;
         propName = undefined;
     }
-    
+
     var validArr = [];
     _validArr.forEach(function(v) {
         validArr.push(normalizedName(propName ? v[propName] : v));
     });
-    
+
     adapter.getDevices(function(err, res) {
         if (err || !res || res.length <= 0) return cb && cb();
-        
+
         var toDelete = [];
         res.forEach(function(obj) {
             var v1 = obj._id.split('.')[2];
@@ -1756,9 +1757,9 @@ var getHttpData =
         }
         options = options || {};
         if (options.encoding === undefined) options.encoding = 'utf8'; // utf-8 | binary
-        
+
         if (/*options && */options.xml2json && xmlParser === -1) return cb && cb(-1);
-        
+
         var request = http.get(url, function(response) {
             var data = '';
             //response.setEncoding(options.encoding);
@@ -1767,7 +1768,7 @@ var getHttpData =
                 data += d.toString(options.encoding);
             });
             response.on('end', function() {
-                
+
                 if (options && options.xml2json) {
                     if (xmlParser === undefined) try {
                         xmlParser = new require('xml2js').Parser({
@@ -1780,7 +1781,7 @@ var getHttpData =
                         xmlParser = -1;
                         return cb && cb (-1);
                     }
-                    
+
                     xmlParser.parseString(data, function (err, json) {
                         cb(err, json);
                     });
@@ -1798,7 +1799,7 @@ var getHttpData =
         //     cb && cb ('timeout', null, link);
         //     cb = null;
         // });
-        
+
     };
 
 
@@ -1812,9 +1813,9 @@ var getHttpsData =
         }
         options = options || {};
         if (options.encoding === undefined) options.encoding = 'utf8';
-        
+
         if (options && options.xml2json && xmlParser === -1) return cb && cb(-1);
-        
+
         var request = https.get(url, function(response) {
             var data = '';
             //response.setEncoding('utf8');
@@ -1822,7 +1823,7 @@ var getHttpsData =
                 data += d.toString(options.encoding);
             });
             response.on('end', function() {
-                
+
                 if (options && options.xml2json) {
                     if (xmlParser === undefined) try {
                         xmlParser = new require('xml2js').Parser({
@@ -1835,7 +1836,7 @@ var getHttpsData =
                         xmlParser = -1;
                         return cb && cb (-1);
                     }
-                    
+
                     xmlParser.parseString(data, function (err, json) {
                         cb(err, json);
                     });
@@ -1853,7 +1854,7 @@ var getHttpsData =
         //     cb && cb ('timeout', null, link);
         //     cb = null;
         // });
-        
+
     };
 
 
@@ -1982,7 +1983,7 @@ exports.merge = exports.mergeObject = function (dest, source) {
  *            if object, object will be merged.
  *            { common: { name: 'name }}
  *        </code></pre>
- 
+
  */
 
 /**

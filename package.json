@@ -1,6 +1,6 @@
 {
   "name": "soef",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "library for ioBroker",
   "author": {
     "name": "soef",
@@ -25,7 +25,7 @@
   "devDependencies": {
     "mocha": "^2.3.4",
     "chai": "^3.4.1"
-  },  
+  },
   "scripts": {
     "test": "node node_modules/mocha/bin/mocha"
   },
