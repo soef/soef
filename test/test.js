@@ -30,7 +30,7 @@ var Adapter = function(options) {
 		}
     };
     this.log = log;
-    this.adapterDir = 'c:\1';
+    this.adapterDir = 'c:\\1';
     this.namespace = 'soef.0';
     this.ioPack = { common: { version: '0.1.16' } };
     this.getForeignStates = function(filter, options, cb) {
