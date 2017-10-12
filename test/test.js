@@ -114,6 +114,22 @@ describe('Test soef', function() {
     //     });
     // }
 
+
+    it('let', function() {
+        let i = 1;
+        expect(i).to.be.equal(1);
+    });
+
+    it('for of', function() {
+        var o = {a: 1, b:2,c:3,d:4};
+        var sum = 0;
+        for (var i of o) {
+            sum += o;
+        }
+        expect(sum).to.be.equal(10);
+    });
+
+
     it('String formating', function() {
         var today = 'today', is = 'is';
         var now = new Date();
