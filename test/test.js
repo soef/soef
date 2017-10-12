@@ -114,22 +114,18 @@ describe('Test soef', function() {
     //     });
     // }
 
+    {
+        "use strict";
 
-    it('let', function() {
-        {
-            "use strict";
+        it ('let', function () {
             let i = 1;
             expect (i).to.be.equal (1);
-        }
-    });
-    it('const', function() {
-        {
-            "use strict";
-            const i = 1;
-            expect (i).to.be.equal (1);
-        }
-    });
-
+        });
+        it ('const', function () {
+                const i = 1;
+                expect (i).to.be.equal (1);
+        });
+    }
     it('for of', function() {
         var o = {a: 1, b:2,c:3,d:4};
         var sum = 0;
