@@ -126,7 +126,7 @@ describe('Test soef', function() {
         expect (i).to.be.equal (1);
     });
     it('for of', function() {
-        var o = {a: 1, b:2,c:3,d:4};
+        var o = [ 1, 2,3,4];
         var sum = 0;
         for (var i of o) {
             sum += o;
