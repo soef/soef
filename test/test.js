@@ -116,8 +116,18 @@ describe('Test soef', function() {
 
 
     it('let', function() {
-        let i = 1;
-        expect(i).to.be.equal(1);
+        {
+            "use strict";
+            let i = 1;
+            expect (i).to.be.equal (1);
+        }
+    });
+    it('const', function() {
+        {
+            "use strict";
+            const i = 1;
+            expect (i).to.be.equal (1);
+        }
     });
 
     it('for of', function() {
