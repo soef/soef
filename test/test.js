@@ -104,15 +104,15 @@ describe('Test soef', function() {
         done();
     });
 
-    console.log('node version=' + soef.getNodeVersion());
-    if (soef.getNodeVersion() >= 6000000) {
-        it ('[x,y] = array', function () {
-            var [a, b, c] = ['a', 'b', 'c'];     // ab node version 6!!!
-            expect (a).to.be.equal ('a');
-            expect (b).to.be.equal ('b');
-            expect (c).to.be.equal ('c');
-        });
-    }
+    // console.log('node version=' + soef.getNodeVersion());
+    // if (soef.getNodeVersion() >= 6000000) {
+    //     it ('[x,y] = array', function () {
+    //         var [a, b, c] = ['a', 'b', 'c'];     // ab node version 6!!!
+    //         expect (a).to.be.equal ('a');
+    //         expect (b).to.be.equal ('b');
+    //         expect (c).to.be.equal ('c');
+    //     });
+    // }
 
     it('String formating', function() {
         var today = 'today', is = 'is';
