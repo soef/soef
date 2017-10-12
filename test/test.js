@@ -119,7 +119,7 @@ describe('Test soef', function() {
         var now = new Date();
         var s = `${today} ${is} ${now.toJSON()}`;
         var o = today + ' ' + is + ' ' + now.toJSON();
-        expect(s).to.be.equal('o');
+        expect(s).to.be.equal(o);
     });
 
 
