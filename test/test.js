@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = require('chai').expect;
 var soef = require(__dirname + '/../soef');
 
@@ -63,7 +65,7 @@ var Adapter = function(options) {
             	cb(0, { val: self.test.oldVersion } );
                 break;
         }
-	}
+	};
 	this.states = {};
     this.states.getState = this.getState;
     this.states.setState = function(id, obj, cb) {
@@ -84,7 +86,7 @@ var Adapter = function(options) {
     this.setObject = function(id, obj, cb) {
     	self.test.results.objects[id] = obj;
     	cb(0, obj);
-	}
+	};
 	this.objects.setObject = this.setObject;
 
 };
@@ -114,18 +116,15 @@ describe('Test soef', function() {
     //     });
     // }
 
-    {
-        "use strict";
 
-        it ('let', function () {
-            let i = 1;
-            expect (i).to.be.equal (1);
-        });
-        it ('const', function () {
-                const i = 1;
-                expect (i).to.be.equal (1);
-        });
-    }
+    it ('let', function () {
+        let i = 1;
+        expect (i).to.be.equal (1);
+    });
+    it ('const', function () {
+        const i = 1;
+        expect (i).to.be.equal (1);
+    });
     it('for of', function() {
         var o = {a: 1, b:2,c:3,d:4};
         var sum = 0;
