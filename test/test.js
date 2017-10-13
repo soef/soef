@@ -117,6 +117,14 @@ describe('Test soef', function() {
     // }
 
 
+    it ('() =>', function () {
+        var ar = [1];
+        ar.forEach((o,i,a) => {
+            expect (o).to.be.equal (1);
+            expect (i).to.be.equal (0);
+            expect (a).to.be.equal (ar);
+        })
+    });
     it ('let', function () {
         let i = 1;
         expect (i).to.be.equal (1);
