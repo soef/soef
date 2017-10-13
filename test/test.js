@@ -129,7 +129,7 @@ describe('Test soef', function() {
         var o = [ 1, 2,3,4,5];
         var sum = 0;
         for (var i of o) {
-            sum += o;
+            sum += i;
         }
         expect(sum).to.be.equal(15);
     });
