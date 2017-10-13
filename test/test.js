@@ -126,12 +126,12 @@ describe('Test soef', function() {
         expect (i).to.be.equal (1);
     });
     it('for of', function() {
-        var o = [ 1, 2,3,4];
+        var o = [ 1, 2,3,4,5];
         var sum = 0;
         for (var i of o) {
             sum += o;
         }
-        expect(sum).to.be.equal(10);
+        expect(sum).to.be.equal(15);
     });
 
 
