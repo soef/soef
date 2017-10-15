@@ -2041,11 +2041,27 @@ exports.minNodeVersion = function (minVersion) {
     var rv = re.exec(minVersion);
     var mv = rv[1] * 100*100 + rv[2]*100 + rv[3];
     return nodeVersion >= mv;
-}
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+exports.callbackOrTimeout = function (timeout, callback) {
+    if (typeof timeout === 'function') {
+        var cb = timeout;
+        timeout = callback;
+        callback = cb;
+    }
+    var timer = setTimeout(function() {
+        callback('timeout', null);
+        callback = null;
+    }, timeout);
+
+    return function(err, data) {
+        if (timer) clearTimeout(timer);
+        return callback && callback(err, data);
+    }
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
