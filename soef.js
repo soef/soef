@@ -1025,6 +1025,23 @@ function Devices (_adapter, _callback) {
                 }
                 return false; //objects[_id];
             };
+
+        this.oset = function (id, newObj, showName) {
+            if (newObj == undefined) return;
+            var _id = dcs(deviceName, channelName, id);
+            if (!objects[_id]) {
+                return add (id, newObj, showName);
+            }
+            var val = newObj['val'] !== undefined ? newObj.val : newObj;
+            if (this.force || objects[_id].val !== val) {
+                that.setState(_id, val, true);
+                //return true;
+            }
+            return objects[_id];
+        };
+
+
+
         this.setex = function (id, newObj, showName) {
             if (adapter && id.substr(0, adapter.namespace.length) === adapter.namespace) {
                 id = id.substr(adapter.namespace.length+1);
