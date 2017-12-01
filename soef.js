@@ -122,7 +122,7 @@ var njs = {
         var props = Object.getOwnPropertyNames(from), destination;
 
         props.forEach(function (name) {
-            if (typeof from[name] === 'object') {
+            if (from[name] !== null && typeof from[name] === 'object') {
                 if (typeof dest[name] !== 'object') {
                     dest[name] = {}
                 }
@@ -146,7 +146,7 @@ var njs = {
                 //dest[name] = new Array(from[name]);
                 dest[name] = [].concat(from[name]);
             } else
-            if (typeof from[name] === 'object') {
+            if (from[name] !== null && typeof from[name] === 'object') {
                 if (typeof dest[name] !== 'object') {
                     dest[name] = {}
                 }
@@ -168,7 +168,7 @@ var njs = {
                 // var v = _clone_(from[name]);
                 // dest[name] = [].concat(v);
             } else
-            if (typeof from[name] === 'object') {
+            if (from[name] !== null && typeof from[name] === 'object') {
                 if (typeof dest[name] !== 'object') {
                     dest[name] = {}
                 }
@@ -876,6 +876,17 @@ function Devices (_adapter, _callback) {
             channelName = "";
             if (!name) return;
             deviceName = normalizedName (name);
+            var obj = { type: 'device', _id: deviceName };
+            if (options) {
+                Object.assign(obj, options);
+            }
+            return push(obj);
+        };
+        this.setDeviceEx = function (name, options) {
+            channelName = "";
+            if (!name) return;
+            deviceName = normalizedName (name.replace(/\\./g, '\n'));
+            deviceName = deviceName.replace(/\n/g, '.');
             var obj = { type: 'device', _id: deviceName };
             if (options) {
                 Object.assign(obj, options);
