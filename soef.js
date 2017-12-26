@@ -872,12 +872,31 @@ function Devices (_adapter, _callback) {
             return obj;
         }
 
+        this.push = push;
+        this.pushNe = function (id, obj) {
+            if (that.has (id)) return objects [id];
+            obj._id = id;
+            push (obj);
+        };
+        Object.defineProperty(this, 'device', {
+            get: function () { return deviceName },
+            set: function (val) { deviceName = val }
+        });
+        Object.defineProperty(this, 'channel', {
+            get: function () { return channelName },
+            set: function (val) { channelName = val }
+        });
+
+
         this.setDevice = function (name, options) {
             channelName = "";
             if (!name) return;
             deviceName = normalizedName (name);
             var obj = { type: 'device', _id: deviceName };
             if (options) {
+                if (typeof options === 'string') {
+                    options = { common: { name: options }}
+                }
                 Object.assign(obj, options);
             }
             return push(obj);
@@ -889,9 +908,12 @@ function Devices (_adapter, _callback) {
             deviceName = deviceName.replace(/\n/g, '.');
             var obj = { type: 'device', _id: deviceName };
             if (options) {
+                if (typeof options === 'string') {
+                    options = { common: { name: options }}
+                }
                 Object.assign(obj, options);
             }
-            return push(obj);
+            return objects[deviceName] ? objects[deviceName] : push(obj);
         };
         this.setDevice(_name, showName && typeof showName == 'string' ? {common: {name: showName}} : showName);
 
@@ -914,6 +936,8 @@ function Devices (_adapter, _callback) {
                 if (id && !that.has(id)) { // don't create channels without id
                     if (typeof showNameOrObject == 'object') {
                         var obj = {type: 'channel', _id: id, common: {name: name} };
+                        Object.assign(obj, showNameOrObject);
+
                         if (showNameOrObject.common) obj.common = showNameOrObject.common;
                         if (showNameOrObject.native) obj.native = showNameOrObject.native;
                     } else {
@@ -1154,12 +1178,12 @@ var CNamespace = function (_adapter) {
 
     var re = new RegExp('^' + _adapter.namespace + '.|^'); //  new/^adapter.0.|^/, '')
     var isre = new RegExp('^' + _adapter.namespace);
-    this.no = function no (s) {
+    this.without = this.no = function no (s) {
         return s.replace(re, '');
     };
     this.remove = this.no;
     this.is = isre.test.bind(isre); //.bind(this);
-    this.add = function add (s) {
+    this.with = this.add = function add (s) {
         return s.replace(re, _adapter.namespace + '.')
     };
     this.add2 = function add (s) {
