@@ -1085,11 +1085,18 @@ exports.Adapter = function (_args) {
         }
     }
     if (!fns.adapter) {
-        try {
-            fns.adapter = require(__dirname + '/../../lib/utils').adapter;
-        }
-        catch(e) {
-            fns.adapter = require(__dirname + '/../iobroker.admin/lib/utils').adapter;
+        var _modules = [
+            __dirname + '/../iobroker.admin/lib/utils',
+            __dirname + '/../../lib/utils'
+        ]
+        for ( ; _modules.length; ) {
+            try {
+                var adpt = require(_modules.pop());
+                fns.adapter = adpt.adapter ? adpt.adapter : adpt.Adapter;
+            }   catch(e) {
+                console.log(JSON.stringify(e));
+            }
+            if (fns.adapter) break;
         }
     }
     var options = fns.options;
@@ -1266,8 +1273,11 @@ exports.Timer = function Timer (func, timeout, v1) {
         return new Timer(func, timeout, v1);
     }
     var timer = null;
+    this.inhibit = false;
+    this.enable = function (bo) { this.inhibit = (bo === false); };
     this.set = function (func, timeout, v1) {
         if (timer) clearTimeout(timer);
+        if (this.inhibit) return;
         timer = setTimeout(function() {
             timer = null;
             func(v1);
@@ -1281,10 +1291,16 @@ exports.Timer = function Timer (func, timeout, v1) {
         }
         return false;
     }
+    this.clearAndInhibit = function () {
+        this.inhibit = true;
+        this.clear();
+    }
+    
     if (func) {
         this.set(func, timeout, v1);
     }
 };
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1553,6 +1569,38 @@ exports.getHttpData = getHttpData;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+function setPossibleStates(id, objarr, options, cb) {
+    if (!adapter) return cb && cb('adapter not set');
+	if (options === undefined) options = {};
+    if (typeof options === 'function') {
+        cb = options;
+        options = {};
+    }
+    adapter.getObject(id, function(err, obj) {
+        if (err || !obj) return;
+        if (objarr.remove || options.remove) {
+            if (obj.common.states === undefined) return cb && cb('does not exist');
+            delete obj.common.states;
+        } else {
+            if (!options.force && obj.common.states) return cb && cb('already set');
+            obj.common.states = {};
+            if (Array.isArray(objarr)) {
+                objarr.forEach(function (v) {
+                    obj.common.states[v] = v;
+                });
+            } else {
+                obj.common.states = objarr;
+            }
+        }
+        if (options.removeNativeValues && obj.native) delete obj.native.values;
+        adapter.setObject(id, obj, function(err, _obj) {
+            cb && cb(err, obj);
+        });
+    })
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 exports.Devices = Devices;
 exports.njs = njs;
 exports.extendGlobalNamespace = extendGlobalNamespace;
@@ -1565,4 +1613,24 @@ try {
     exports.sprintf = function(fs) { return 'sprintf-js not loaded ' + fs}
     exports.vsprintf = exports.sprintf
 }
+
+/*
+var O = function () {
+    this.a = 1;
+    this.c = 3;
+};
+
+Object.defineProperty(O.prototype, 'b', {
+    get: function() {
+        return this.a;
+    },
+    set: function(val) {
+        this.a = val;
+    }
+});
+
+var o = new O();
+o.a = 11;
+o.b = 2;
+*/
 
