@@ -1,10 +1,13 @@
 {
   "name": "soef",
-  "version": "0.1.47",
+  "version": "0.1.49",
   "description": "library for ioBroker",
   "author": {
     "name": "soef",
     "email": "soef@gmx.net"
+  },
+  "engines": {
+    "node": ">=4.0.0"
   },
   "contributors": [
     {
@@ -37,10 +40,5 @@
     "url": "https://github.com/soef/soef/issues"
   },
   "main": "soef.js",
-  "readmeFilename": "readme.md",
-  "readme": "###Library for ioBroker\r\n\r\n[![NPM version](http://img.shields.io/npm/v/soef.svg)](https://www.npmjs.com/package/soef)\r\n[![Tests](http://img.shields.io/travis/soef/soef/master.svg)](https://travis-ci.org/soef/soef)\r\n[![Build status](https://ci.appveyor.com/api/projects/status/njb3gh6f49motmuk?svg=true)](https://ci.appveyor.com/project/soef/soef)\r\n[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/soef/soef/blob/master/LICENSE)\r\n\r\n\r\n",
-  "gitHead": "3d12aefa04b9b5013fee60c56352eebf0491dc9d",
-  "_id": "soef@0.1.46",
-  "_shasum": "cb405300eeb38a62742a8b35fa7232ef5dcd7b34",
-  "_from": "soef@0.1.46"
+  "readmeFilename": "readme.md"
 }
