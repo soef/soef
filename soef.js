@@ -1,8 +1,8 @@
 /**
- 
- Copyright (c) 2016 - 2017 soef <soef@gmx.net>
+
+ Copyright (c) 2016 - 2020 soef <soef@gmx.net>
  All rights reserved.
- 
+
  **/
 
 "use strict";
@@ -99,13 +99,13 @@ exports.safeFunction = safeFunction;
 exports.getFnProp = function(root, path, log) {
 	if (typeof log !== 'function') log = function() {};
 	return safeFunction(root, path, log);
-}
+};
 
 ////////////////////////////////////////////////////////////////////////////////////
 
 var njs = {
 
-    pasProp: hasProp, 
+    pasProp: hasProp,
     iscb: function (cb) {
         return typeof cb === 'function';
     },
@@ -138,7 +138,7 @@ var njs = {
 
     clone: function (from) {
         var props = Object.getOwnPropertyNames(from), destination, dest = {};
-        
+
         props.forEach(function (name) {
             if (from[name] instanceof Array) {
                 //dest[name] = new Array(from[name]);
@@ -162,10 +162,10 @@ var njs = {
             callback(val1, val2);
         }
     },
-    
+
     forEachArrayCallback: function forEachArrayCallback (arr, readyCallback, func) {
         var cnt = -1, len = arr.length;
-        
+
         function doit() {
             if (++cnt >= len) {
                 return readyCallback && readyCallback();
@@ -174,7 +174,7 @@ var njs = {
         }
         doit();
     },
-    
+
     forEachCB: function (maxcnt, func, readyCallback) {
         var cnt = -1;
 
@@ -620,7 +620,7 @@ function Devices (_adapter, _callback) {
             //if (that.root.list) that.root.list = that.list;
             list = that.list.slice();
             that.list.length = 0;
-			
+
         }
         if (!list || list.length == 0) return safeCallback(callback, -1);
 
@@ -910,7 +910,7 @@ function Devices (_adapter, _callback) {
             }
             this.setAndUpdate(id, st);
         };
-		
+
         this.update = function (callback) {
             if (this.list.length > 0) {
                 that.update(this.list, callback);
@@ -942,7 +942,7 @@ var CNamespace = function (_adapter) {
     if (!(this instanceof CNamespace)) {
         return new CNamespace(_adapter);
     }
-    
+
     var re = new RegExp('^' + _adapter.namespace + '.|^'); //  new/^adapter.0.|^/, '')
     var isre = new RegExp('^' + _adapter.namespace);
     this.no = function no (s) {
@@ -1088,7 +1088,8 @@ exports.Adapter = function (_args) {
         var _modules = [
             __dirname + '/../iobroker.admin/lib/utils',
             __dirname + '/../../lib/utils'
-        ]
+            __dirname + '/../iobroker.' + fns.options.name + '/lib/utils'
+        ];
         for ( ; _modules.length; ) {
             try {
                 var adpt = require(_modules.pop());
@@ -1166,7 +1167,7 @@ function changeAdapterConfig (_adapter, changeCallback, doneCallback) {
     });
 }
 exports.changeAdapterConfig = changeAdapterConfig;
-    
+
 exports.changeConfig = function changeConfig(changeCallback, doneCallback) {
     if (!adapter) return false;
     return changeAdapterConfig(adapter, changeCallback, doneCallback)
@@ -1295,7 +1296,7 @@ exports.Timer = function Timer (func, timeout, v1) {
         this.inhibit = true;
         this.clear();
     }
-    
+
     if (func) {
         this.set(func, timeout, v1);
     }
@@ -1452,15 +1453,15 @@ exports.deleteOrphanedDevices = function (propName, _validArr, cb) {
         _validArr = propName;
         propName = undefined;
     }
-    
+
     var validArr = [];
     _validArr.forEach(function(v) {
         validArr.push(normalizedName(propName ? v[propName] : v));
     });
-    
+
     adapter.getDevices(function(err, res) {
         if (err || !res || res.length <= 0) return cb && cb();
-        
+
         var toDelete = [];
         res.forEach(function(obj) {
             var v1 = obj._id.split('.')[2];
@@ -1501,7 +1502,7 @@ exports.isWin = process.platform === 'win32';
 var log = function (fmt, args) {
     adapter.log.info(exports.sprintf.apply (null, arguments));
 }
-    
+
 log.error = function(fmt, args) { adapter.log.error(exports.sprintf.apply (null, arguments)); },
 log.info =  function(fmt, args) { adapter.log.info(exports.sprintf.apply (null, arguments)); },
 log.debug = function(fmt, args) {
@@ -1521,23 +1522,23 @@ exports.log = log;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 var xmlParser, http;
-                                                        
+
 function getHttpData(url, options, cb) {
     if (!http) try { http = require('http'); } catch(e) { return cb && cb(-1) };
     if (cb == undefined) {
         cb = options;
         options = undefined;
     }
-    
+
     if (options && options.xml2json && xmlParser === -1) return cb && cb(-1);
-    
+
     var request = http.get(url, function(response) {
         var data = '';
         response.on('data', function(d) {
             data += d;
         });
         response.on('end', function() {
-            
+
             if (options && options.xml2json) {
                 if (xmlParser === undefined) try {
                     xmlParser = new require('xml2js').Parser({
@@ -1550,7 +1551,7 @@ function getHttpData(url, options, cb) {
                     xmlParser = -1;
                     return cb && cb (-1);
                 }
-            
+
                 xmlParser.parseString(data, function (err, json) {
                     cb(err, json);
                 });
@@ -1563,7 +1564,7 @@ function getHttpData(url, options, cb) {
         console.error(e);
     });
     request.end();
-    
+
 }
 exports.getHttpData = getHttpData;
 
