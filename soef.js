@@ -417,10 +417,10 @@ var objects = {};
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function setObject(id, obj, options, callback) {
-    return adapter.objects.setObject(adapter.namespace + '.' + id, obj, options, callback);
+    return adapter.setObject(adapter.namespace + '.' + id, obj, options, callback);
 }
 function getObject(id, options, callback) {
-    return adapter.objects.getObject(adapter.namespace + '.' + id, options, callback);
+    return adapter.getObject(adapter.namespace + '.' + id, options, callback);
 }
 function setState(id, val, ack) {
     //ack = ack || true;
@@ -983,9 +983,9 @@ function savePrevVersion() {
         adapter.states.setState(vid, { val: adapter.ioPack.common.version, ack: true, from: id });
     }
 
-    adapter.objects.getObject(vid, function(err, obj) {
+    adapter.getObject(vid, function(err, obj) {
         if (err || !obj) {
-            adapter.objects.setObject(vid, {
+            adapter.setObject(vid, {
                 type: 'state',
                 common: {name: 'version', role: "indicator.state", desc: 'version check for updates'},
                 native: {}
@@ -1000,6 +1000,7 @@ function savePrevVersion() {
 
 function checkIfUpdated(doUpdateCallback, callback) {
     if(!adapter) return safeCallback(callback);
+    if(!adapter.states) return safeCallback(callback);
     if (!callback) callback = nop;
     var id = 'system.adapter.' + adapter.namespace;
     var vid = id + '.prevVersion';
@@ -1087,7 +1088,7 @@ exports.Adapter = function (_args) {
     if (!fns.adapter) {
         var _modules = [
             __dirname + '/../iobroker.admin/lib/utils',
-            __dirname + '/../../lib/utils'
+            __dirname + '/../../lib/utils',
             __dirname + '/../iobroker.' + fns.options.name + '/lib/utils'
         ];
         for ( ; _modules.length; ) {
@@ -1307,7 +1308,7 @@ exports.Timer = function Timer (func, timeout, v1) {
 
 njs.dcs._forEach = forEachInSystemObjectView;
 function forEachInSystemObjectView(type, id, readyCallback, callback) {
-    adapter.objects.getObjectView('system', type, {startkey: id + '.', endkey: id + '.\u9999'}, null, function (err, res) {
+    adapter.getObjectView('system', type, {startkey: id + '.', endkey: id + '.\u9999'}, null, function (err, res) {
         if (err || !res || !res.rows) return readyCallback && readyCallback();
         var i = 0;
         function doIt() {
@@ -1494,6 +1495,49 @@ exports.existDirectory = function (path) {
     }
     return false;
 }
+
+exports.readdirSync = function (fn, defaultReturnValue) {
+    try {
+        _fs = _fs || require('fs');
+        var list = _fs.readdirSync (fn);
+        if (list) {
+            list.sort();
+            var idx = list.indexOf('__DB__');
+            if (idx >= 0) list.splice(idx, 1);
+            return list;
+        }
+    } catch(e) {
+        return defaultReturnValue;
+    }
+    return defaultReturnValue;
+}
+
+
+exports.lstatSync = function (path) {
+    try {
+        _fs = _fs || require('fs');
+        return (_fs.lstatSync(path));
+    } catch(e) {
+        return e;
+    }
+}
+
+
+'mkdirSync, unlinkSync, rmdirSync, renameSync, readFileSync, writeFileSync, unlink'.split(', ').forEach(function(funcName) {
+    _fs = _fs || require('fs');
+    var func = _fs[funcName];
+    exports[funcName] = function (fn) {
+        try {
+            return func.apply(1, arguments) || true;
+            //func (fn);
+        } catch(e) {
+            return false;
+        }
+        return true;
+    }
+});
+
+
 exports.isWin = process.platform === 'win32';
 
 
@@ -1503,8 +1547,8 @@ var log = function (fmt, args) {
     adapter.log.info(exports.sprintf.apply (null, arguments));
 }
 
-log.error = function(fmt, args) { adapter.log.error(exports.sprintf.apply (null, arguments)); },
-log.info =  function(fmt, args) { adapter.log.info(exports.sprintf.apply (null, arguments)); },
+log.error = function(fmt, args) { adapter.log.error(exports.sprintf.apply (null, arguments)); };
+log.info =  function(fmt, args) { adapter.log.info(exports.sprintf.apply (null, arguments)); };
 log.debug = function(fmt, args) {
     if (adapter.common.loglevel !== 'debug') {
         log.debug = function() {};
@@ -1570,20 +1614,20 @@ exports.getHttpData = getHttpData;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function setPossibleStates(id, objarr, options, cb) {
-    if (!adapter) return cb && cb('adapter not set');
+function setPossibleStates(id, objarr, options, _cb) {
+    if (!adapter) return _cb && _cb('adapter not set');
 	if (options === undefined) options = {};
     if (typeof options === 'function') {
-        cb = options;
+        _cb = options;
         options = {};
     }
     adapter.getObject(id, function(err, obj) {
         if (err || !obj) return;
         if (objarr.remove || options.remove) {
-            if (obj.common.states === undefined) return cb && cb('does not exist');
+            if (obj.common.states === undefined) return _cb && _cb('does not exist');
             delete obj.common.states;
         } else {
-            if (!options.force && obj.common.states) return cb && cb('already set');
+            if (!options.force && obj.common.states) return _cb && _cb('already set');
             obj.common.states = {};
             if (Array.isArray(objarr)) {
                 objarr.forEach(function (v) {
@@ -1595,10 +1639,183 @@ function setPossibleStates(id, objarr, options, cb) {
         }
         if (options.removeNativeValues && obj.native) delete obj.native.values;
         adapter.setObject(id, obj, function(err, _obj) {
-            cb && cb(err, obj);
+            _cb && _cb(err, obj);
         });
     })
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+exports.arrayRemoveEE = function (ar) {
+    for (var i=ar.length-1; i>=0; i--) {
+        if (!ar[i]) ar.splice(i,1);
+    }
+};
+exports.arrayRemoveEmptyEntries = exports.arrayRemoveEE;
+
+exports.arrayJoinWithoutEmptyEntries = function (ar, sep) {
+    var ret = '';
+    ar.forEach(function (v) {
+        if (v) {
+            if (!ret) ret = v;
+            else ret += sep + v;
+        }
+    });
+    return ret;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+exports.getNodeVersion = function () {
+    var version = 0;
+    if (process || process.version) {
+        var ar = process.version.split('.');
+        if (ar[0].indexOf('v') === 0) ar[0] = ar[0].substr(1);
+        for (var i=0; i<ar.length; i++) {
+            version *= 1000;
+            version += ~~ar[i];
+        }
+        //if (version >= 6000000) ;
+    }
+    return version;
+};
+
+exports.setAdapter = function (_adapter) {
+    var ret = adapter;
+    if (_adapter) adapter = _adapter;
+    return ret;
+};
+
+var packageJson;
+exports.getSoefVersion = exports.getOwnVersion = function () {
+    try {
+        if (!packageJson) packageJson = require('package.sjson');
+        return packageJson.version;
+    } catch(e) {
+    }
+    return undefined;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Merges dest to source recursive and returns changed
+ *
+ * @alias merge or mergeObject
+ * @param {object} dest object
+ * @param {object} source
+ */
+exports.merge = exports.mergeObject = function (dest, source) {
+    var changed = false;
+    Object.getOwnPropertyNames(source).forEach(function (name) {
+        if (typeof source[name] === 'object') {
+            if (typeof dest[name] !== 'object') {
+                dest[name] = {}
+            }
+            changed |= exports.merge (dest[name], source[name]);
+        } else {
+            changed = changed || dest[name] !== source[name];
+            dest[name] = source[name];
+        }
+    });
+    return !!changed;
+};
+
+/**
+ * Modifies an ioBroker object
+ *
+ * @alias modifyObject or modifyForeignObject
+ * @param {string} id of the object to modify
+ * @param {object or function} callback (obj)
+ *        <pre><code>
+ *            function (obj) {
+         *              obj.common.name = 'name'
+         *            }
+ *            cann return false to not write the object.
+ *
+ *            if object, object will be merged.
+ *            { common: { name: 'name }}
+ *        </code></pre>
+
+ */
+
+/**
+ * Creates or overwrites object in objectDB.
+ *
+ * This function can create or overwrite objects in objectDB for this adapter.
+ * Only Ids that belong to this adapter can be modified. So the function automatically adds "adapter.X." to ID.
+ * <b>common</b>, <b>native</b> and <b>type</b> attributes are mandatory and it will be checked.
+ * Additionally type "state" requires <b>role</b>, <b>type</b> and <b>name</b>, e.g.:
+ * <pre><code>{
+         *     common: {
+         *          name: 'object name',
+         *          type: 'number', // string, boolean, object, mixed, array
+         *          role: 'value'   // see https://github.com/ioBroker/ioBroker/blob/master/doc/SCHEMA.md#state-commonrole
+         *     },
+         *     native: {},
+         *     type: 'state' // channel, device
+         * }</code></pre>
+ * @param {function} callback called after the object is written
+ *        <pre><code>
+ *            function (err, obj) {
+         *              // obj is {id: id}
+         *              if (err) adapter.log.error('Cannot write object: ' + err);
+         *            }
+ *        </code></pre>
+ *
+ *        lastIdToModify will be set to the id. can be used in objectChanged to ignore the change.
+ *
+ **/
+exports.lastIdToModify = '';
+exports.modifyObject = exports.modifyForeignObject = function (id, callbackOrObject, readyCallback) {
+    adapter.getForeignObject(id, {}, function(err, obj) {
+        if (err || !obj) return readyCallback && readyCallback(err);
+        if (typeof callbackOrObject === 'function') {
+            if (callbackOrObject (obj) === false) return readyCallback && readyCallback ('not changed');
+        } else if (typeof callbackOrObject === 'object') {
+            var changed = exports.merge(obj, callbackOrObject);
+            if (!changed) return readyCallback && readyCallback ('not changed');
+        }
+        exports.lastIdToModify = id;
+        adapter.setForeignObject(id, obj, {}, function(err,obj) {
+            exports.lastIdToModify = undefined;
+            readyCallback && readyCallback(err,obj);
+        });
+    })
+}
+
+var nodeVersion;
+exports.minNodeVersion = function (minVersion) {
+    var re = /^v*([0-9]+)\.([0-9]+)\.([0-9]+)/;
+    if (nodeVersion === undefined) {
+        var nv = re.exec (process.version);
+        nodeVersion = nv[1]*100*100 + nv[2] * 100 + nv[3];
+    }
+    var rv = re.exec(minVersion);
+    var mv = rv[1] * 100*100 + rv[2]*100 + rv[3];
+    return nodeVersion >= mv;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+exports.callbackOrTimeout = function (timeout, callback) {
+    if (typeof timeout === 'function') {
+        var cb = timeout;
+        timeout = callback;
+        callback = cb;
+    }
+    var timer = setTimeout(function() {
+        callback('timeout', null);
+        callback = null;
+    }, timeout);
+
+    return function(err, data) {
+        if (timer) clearTimeout(timer);
+        return callback && callback(err, data);
+    }
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1634,4 +1851,3 @@ var o = new O();
 o.a = 11;
 o.b = 2;
 */
-
